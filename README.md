@@ -6,7 +6,7 @@ A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notific
 
 <hr/>
 
-## 📘 Table of Contents
+## Table of Contents
 - [1. System Requirements](#1-system-requirements)
 - [2. Installation Procedure](#2-installation-procedure)
 - [3. Running the Application](#3-running-the-application)
