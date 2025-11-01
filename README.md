@@ -32,7 +32,7 @@ Ensure your system meets the following requirements:
 <h2 id="2-installation-procedure">2. Installation Procedure</h2>
 
 ### Step 1 – Clone the Repository
-<pre><code>git clone &lt;repository-url&gt;
+<pre><code>git clone https://github.com/pillorajem10/chattr-api.git;
 cd chattr-api
 </code></pre>
 
