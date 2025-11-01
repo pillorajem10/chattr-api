@@ -1,66 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Chattr API – Setup and Configuration Guide
+This document provides complete setup instructions for the Chattr API, a Laravel 10 application developed with PHP 8.1.25. The API includes endpoints for posts, reactions, notifications, and supports real-time communication through WebSockets. Follow the procedures below to install, configure, and run the system locally.
+1. System Requirements
+•	PHP version 8.1.25 or higher
+•	Composer (PHP dependency manager)
+•	MySQL 5.7, 8.0, or any database supported by Laravel
+•	Node.js and NPM (optional – for front-end assets)
+2. Installation Procedure
+Step 1 – Clone the Repository
+Execute the following commands in your terminal:
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+git clone https://github.com/pillorajem10/chattr-api.git 
+cd chattr-api
 
-## About Laravel
+Step 2 – Install Dependencies
+Run Composer to install the required PHP packages:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+composer install
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Step 3 – Configure the Environment File
+Create the environment configuration file by copying the example:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+cp .env.example .env
 
-## Learning Laravel
+Note: The provided .env.example file already contains valid default values for local development. If no customization is required, you may use these defaults as-is.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Step 4 – Generate the Application Key
+Run the following command to generate a unique application key:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+php artisan key:generate
 
-## Laravel Sponsors
+Step 5 – Configure Database Settings
+Edit the .env file to match your database credentials. Ensure that the database exists before proceeding.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=chattr
+DB_USERNAME=root
+DB_PASSWORD=
 
-### Premium Partners
+Step 6 – Run Database Migrations
+Execute migrations to create all required tables:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+php artisan migrate
 
-## Contributing
+Step 7 – (Optional) Seed Sample Data
+Run seeders if available to populate the database with sample records:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+php artisan db:seed
 
-## Code of Conduct
+3. Running the Application
+Step 1 – Start the HTTP Server
+Use the following command to start the Laravel development server:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+php artisan serve
 
-## Security Vulnerabilities
+The default address will be: http://127.0.0.1:8000
+Step 2 – Run the WebSocket Server
+The Chattr API uses Laravel WebSockets for real-time updates. Run the WebSocket server in a separate terminal window alongside the main server.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+php artisan websockets:serve
 
-## License
+Ensure both processes remain active during development. The WebSocket dashboard can be accessed at http://127.0.0.1:8000/laravel-websockets.
+4. WebSocket Configuration
+To enable WebSockets, publish the necessary migration and configuration files and apply migrations as shown below.
+Execute the following commands:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. php artisan vendor:publish --provider="BeyondCode\LaravelWebSockets\WebSocketsServiceProvider" --tag="migrations"
+2. php artisan migrate
+3. php artisan vendor:publish --      provider="BeyondCode\LaravelWebSockets\WebSocketsServiceProvider" --tag="config"
+
+Update the Pusher-related environment variables in the .env file as follows:
+
+BROADCAST_DRIVER=pusher
+PUSHER_APP_ID=local
+PUSHER_APP_KEY=local
+PUSHER_APP_SECRET=local
+PUSHER_HOST=127.0.0.1
+PUSHER_PORT=6001
+PUSHER_SCHEME=http
+PUSHER_APP_CLUSTER=mt1
+
+5. Authentication
+Chattr API uses Laravel Sanctum for token-based authentication. After a successful login or registration, a token is issued in the response. Include this token in the header for authenticated requests:
+Authorization: Bearer <your_token>
+6. Troubleshooting
+If recent configuration changes do not appear to take effect, clear Laravel’s cached files before restarting the servers:
+
+php artisan config:clear
+php artisan cache:clear
+
+Verify that your database credentials are correct and the database exists. Ensure both the HTTP and WebSocket servers are running concurrently.
+7. Quick Command Summary
+1.	composer install – Install PHP dependencies
+2.	cp .env.example .env – Create environment configuration file
+3.	php artisan key:generate – Generate application key
+4.	php artisan migrate – Run database migrations
+5.	php artisan serve – Start HTTP server
+6.	php artisan websockets:serve – Start WebSocket server
+8. Completion
+The Chattr API should now be fully functional in your local environment. You can begin developing, testing endpoints, and verifying real-time event updates through WebSockets.
+For further customization, review route definitions in routes/api.php and event broadcasting configurations in app/Events.

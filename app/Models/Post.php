@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    use HasFactory;
+
+    protected $table = 'tbl_posts';
+
+    protected $fillable = [
+        'post_user_id',
+        'post_content',
+        'post_is_shared',
+    ];
+
+    public $timestamps = true;
+
+    /**
+     * The user who owns this post.
+     *
+     * Defines the inverse of the one-to-many relationship.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'post_user_id');
+    }
+
+    /**
+     * Get all reactions associated with this post.
+     *
+     * This defines the one-to-many relationship between
+     * the post and its reactions.
+     */
+    public function reactions()
+    {
+        return $this->hasMany(Reaction::class, 'reaction_post_id');
+    }
+
+    /**
+     * Get all comments associated with this post.
+     *
+     * This defines the one-to-many relationship between
+     * the post and its comments.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'comment_post_id');
+    }
+}
