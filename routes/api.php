@@ -18,3 +18,4 @@ Route::prefix('comments')->group(base_path('routes/api/comments.php'));
 Route::prefix('shares')->group(base_path('routes/api/shares.php'));
 Route::prefix('users')->group(base_path('routes/api/users.php'));
 Route::prefix('notifications')->group(base_path('routes/api/notifications.php'));
+Route::prefix('messages')->group(base_path('routes/api/messages.php'));
