@@ -1,7 +1,7 @@
 <h1 align="center">Chattr API – Setup and Configuration Guide</h1>
 
 <p align="center">
-A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notifications, and real-time updates via WebSockets.
+A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notifications, messages, and real-time updates via WebSockets.
 </p>
 
 <hr/>
@@ -58,17 +58,12 @@ DB_USERNAME=root
 DB_PASSWORD=
 </code></pre>
 
-### Step 6 – Run Database Migrations
-<pre><code>php artisan migrate
+### Step 6 – Run Database Migrations and Seed Data
+<pre><code>php artisan migrate --seed
 </code></pre>
 
-### Step 7 – (Optional) Seed Sample Data
-<details>
-<summary>Show Command</summary>
-
-<pre><code>php artisan db:seed
-</code></pre>
-</details>
+<p style="color:gray"><i>Note:</i> The <code>--seed</code> flag automatically populates demo data including sample users, posts, comments, messages, and notifications.  
+Default demo user password: <code>password</code></p>
 
 <hr/>
 
@@ -145,7 +140,7 @@ Check the following:
 | <code>composer install</code> | Install PHP dependencies |
 | <code>cp .env.example .env</code> | Create environment file |
 | <code>php artisan key:generate</code> | Generate application key |
-| <code>php artisan migrate</code> | Run migrations |
+| <code>php artisan migrate --seed</code> | Run migrations and seed demo data |
 | <code>php artisan serve</code> | Start HTTP server |
 | <code>php artisan websockets:serve</code> | Start WebSocket server |
 

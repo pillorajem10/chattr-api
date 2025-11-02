@@ -3,42 +3,32 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * Factory for tbl_users.
+ *
+ * Note: seeded demo users use the password "password" (bcrypt'd).
+ * This makes it easy for reviewers to login: use the generated email + "password".
  */
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
-
-    /**
      * Define the model's default state.
      *
-     * @return array<string, mixed>
+     * @return array
      */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'user_fname'    => $this->faker->firstName,
+            'user_lname'    => $this->faker->lastName,
+            'user_email'    => $this->faker->unique()->safeEmail(),
+            'user_bio'      => $this->faker->optional()->sentence(),
+            // Demo password for seeded users is "password"
+            'user_password' => bcrypt('password'),
+            'created_at'    => now(),
+            'updated_at'    => now(),
         ];
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
     }
 }
