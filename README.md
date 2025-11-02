@@ -12,9 +12,8 @@ A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notific
 - [3. Running the Application](#3-running-the-application)
 - [4. WebSocket Configuration](#4-websocket-configuration)
 - [5. Authentication](#5-authentication)
-- [6. Troubleshooting](#6-troubleshooting)
-- [7. Quick Command Summary](#7-quick-command-summary)
-- [8. Completion](#8-completion)
+- [6. Quick Command Summary](#6-quick-command-summary)
+- [7. Completion](#7-completion)
 
 <hr/>
 
@@ -109,31 +108,25 @@ PUSHER_APP_CLUSTER=mt1
 
 <h2 id="5-authentication">5. Authentication</h2>
 
-The Chattr API uses **Laravel Sanctum** for token-based authentication.  
-Upon successful login or registration, the API returns a token.  
-Include this token in the header of authenticated requests:
+The Chattr API uses **Laravel Sanctum** for token-based authentication.
 
-<pre><code>Authorization: Bearer &lt;your_token&gt;
-</code></pre>
+After running `php artisan migrate --seed`, several demo user accounts will be created with the password **"password"**.
 
-<hr/>
+To test authentication using **Postman**:
+1. Set the method to **POST**  
+2. URL: `http://127.0.0.1:8000/api/auth/login`  
+3. Go to **Body → raw → JSON**  
+4. Enter any user email from the seeded demo list with password **password**
 
-<h2 id="6-troubleshooting">6. Troubleshooting</h2>
+Example:  
+Use any of the following demo emails (check console output after seeding).  
 
-If configuration changes are not taking effect, clear cached configurations:
-
-<pre><code>php artisan config:clear
-php artisan cache:clear
-</code></pre>
-
-Check the following:
-- Verify `.env` database credentials.
-- Ensure your database exists and is accessible.
-- Keep both the HTTP and WebSocket servers running during development.
+After a successful login, the API will return a token.  
+Use that token in all protected endpoints by adding this header in Postman:
 
 <hr/>
 
-<h2 id="7-quick-command-summary">7. Quick Command Summary</h2>
+<h2 id="6-quick-command-summary">6. Quick Command Summary</h2>
 
 | Command | Description |
 |:--|:--|
@@ -146,7 +139,7 @@ Check the following:
 
 <hr/>
 
-<h2 id="8-completion">8. Completion</h2>
+<h2 id="7-completion">7. Completion</h2>
 
 Once setup is complete, the Chattr API should be fully functional in your local environment.  
 You can now test endpoints, verify authentication, and confirm real-time updates via WebSockets.
