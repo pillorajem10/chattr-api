@@ -12,5 +12,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/', [ShareController::class, 'sharePost']);
+    Route::post('/{postId}', [ShareController::class, 'sharePost']);
 });

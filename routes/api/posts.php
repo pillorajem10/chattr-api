@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/', [PostController::class, 'posts']);
-    Route::post('/', [PostController::class, 'create']);
+    Route::get('/', [PostController::class, 'getAllPosts']);
+    Route::post('/', [PostController::class, 'createPost']);
     Route::get('/{postId}', [PostController::class, 'getPostById']);
     Route::delete('/{postId}', [PostController::class, 'deletePostById']);
 });

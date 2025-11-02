@@ -40,4 +40,20 @@ class ResponseHelper
     {
         return self::baseResponse(false, $data, $msg, 401);
     }
+
+    /**
+     * Paginated formatted response.
+     */
+    public static function sendPaginatedResponse($data, $pageIndex, $pageSize, $totalPages, $totalRecords, $msg = 'Request successful', $statusCode = 200)
+    {
+        $formattedData = [
+            'pageIndex'    => $pageIndex,
+            'pageSize'     => $pageSize,
+            'totalPages'   => $totalPages,
+            'totalRecords' => $totalRecords,
+            'records'      => $data,
+        ];
+
+        return self::baseResponse(true, $formattedData, $msg, $statusCode);
+    }
 }

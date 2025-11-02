@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Events\NotificationCreated;
 use App\Events\NotificationRemoved;
+use App\Helpers\ResponseHelper;
+use App\Helpers\TokenHelper;
 use App\Models\Post;
 use App\Models\Share;
 use App\Models\Notification;
@@ -19,66 +21,54 @@ class ShareController extends Controller
      * Notifies the post owner about the new share.
      * Real-time broadcasting of the new share event.
      * 
-     * A new post will be created post_is_shared = true, post_shared_id = original post id
+     * A new "Post" will be created with post_is_shared set to true.
      */
     public function sharePost(Request $request, $postId)
     {
-        // Decode the token from the Authorization header
-        $user = TokenHelper::decodeToken($request->header('Authorization'));
-
-        // validate incoming request data
+        // Validate the incoming request data
         $validator = Validator::make($request->all(), [
-            'share_caption' => 'nullable|string|max:255',
+            "share_caption" => "nullable|string|max:1000",
         ]);
 
-        // Return validation errors if any
         if ($validator->fails()) {
-            // get the first array for the message
-            $firstError = collect($validator->errors()->all())->first();
-
-            // Return the first validation error
-            return ResponseHelper::sendError($firstError, null, 422);
-        };
-
-        // Verify that the post exists
-        $post = Post::find($postId);
-        if (!$post) {
-            return ResponseHelper::sendError('Post not found.', null, 404);
+            return ResponseHelper::validationError($validator->errors());
         }
 
-        // Check if the user has already shared the post
-        $existingShare = Share::where('share_post_id', $postId)
-            ->where('share_user_id', $user->id)
-            ->first();
+        $user = TokenHelper::decodeToken($request->header('Authorization'));
+        $originalPost = Post::find($postId);
 
-        if ($existingShare) {
-            return ResponseHelper::sendError('You have already shared this post.', null, 409);
+        // Check if the original post exists
+        if (!$originalPost) {
+            return ResponseHelper::sendError('Original post not found.', null, 404);
         }
 
-        // Create new share
+        // Create a share record
         $share = Share::create([
-            'share_post_id' => $postId,
             'share_user_id' => $user->id,
-            'share_caption' => $request->input('share_caption', ''),
+            'share_original_post_id' => $originalPost->id,
         ]);
 
-        // Fire the real-time share created event
-        event(new ShareCreated($share));
+        // Create a new post as a shared post
+        $sharedPost = Post::create([
+            'post_user_id' => $user->id,
+            'post_content' => $request->share_caption,
+            'post_is_shared' => true,
+            'post_share_id' => $share->id,
+        ]);
 
-        // Notify the post owner about the new share
-        if ($post->user->id !== $user->id) {
+        // Create a notification for the original post owner
+        if ($originalPost->post_user_id !== $user->id) {
             $notification = Notification::create([
-                'notification_user_id' => $post->user->id,
-                'notification_type'    => 'share',
-                'notification_post_id' => $postId,
+                'notification_user_id' => $originalPost->post_user_id,
+                'notification_type' => 'share',
+                'notification_post_id' => $originalPost->id,
                 'notification_message' => "{$user->user_fname} {$user->user_lname} shared your post.",
             ]);
 
-            // Fire the real-time notification created event
+            // Broadcast the notification event
             event(new NotificationCreated($notification));
         }
 
-        // Return response
         return ResponseHelper::sendSuccess($share, 'Post shared successfully.', 201);
     }
 }

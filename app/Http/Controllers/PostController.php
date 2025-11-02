@@ -12,21 +12,43 @@ use Illuminate\Support\Facades\Validator;
 class PostController extends Controller
 {
     /**
-     * Retrieve all posts.
-     *
-     * Fetches all posts from the database and returns them in a structured response.
+     * Get all users except the authenticated user
+     * 
+     * with pagination response helper
+     * 
+     * @param Request $request
      */
-    public function posts(Request $request)
+    public function getAllPosts(Request $request)
     {
+        // Get authenticated user ID
+        $user = TokenHelper::decodeToken($request->header('Authorization'));
+
+        // Fetch posts
+        $postsQuery = Post::with('user')->orderBy('created_at', 'desc');
+
         // Pagination parameters
-        $pageIndex = $request->query('pageIndex', 1);
-        $pageSize = $request->query('pageSize', 10);
+        $pageIndex = (int) $request->query('pageIndex', 1);
+        $pageSize  = (int) $request->query('pageSize', 10);
 
-        // Fetch paginated posts with the owner details
-        $posts = Post::with('user')->paginate($pageSize, ['*'], 'page', $pageIndex);
+        // Get total records count
+        $totalRecords = $postsQuery->count();
 
-        // return response
-        return ResponseHelper::sendSuccess($posts, 'Posts retrieved successfully.', 200);
+        // Calculate total pages
+        $totalPages = ceil($totalRecords / $pageSize);
+
+        // Fetch paginated posts
+        $posts = $postsQuery->skip(($pageIndex - 1) * $pageSize)
+                            ->take($pageSize)
+                            ->get();
+
+        // Return paginated response
+        return ResponseHelper::sendPaginatedResponse(
+            $posts,
+            $pageIndex,
+            $pageSize,
+            $totalPages,
+            $totalRecords
+        );
     }
 
     /**
@@ -34,7 +56,7 @@ class PostController extends Controller
      *
      * Validates input data and creates a new post in the database.
      */
-    public function create(Request $request)
+    public function createPost(Request $request)
     {
         // Decode the token from the Authorization header
         $user = TokenHelper::decodeToken($request->header('Authorization'));

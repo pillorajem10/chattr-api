@@ -15,6 +15,7 @@ class Post extends Model
         'post_user_id',
         'post_content',
         'post_is_shared',
+        'post_share_id',
     ];
 
     public $timestamps = true;

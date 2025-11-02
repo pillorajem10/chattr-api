@@ -12,9 +12,8 @@ class Share extends Model
     protected $table = 'tbl_shares';
 
     protected $fillable = [
-        'share_post_id',
+        'share_original_post_id',
         'share_user_id',
-        'share_caption',
     ];
 
     public $timestamps = true;

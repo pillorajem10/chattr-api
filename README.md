@@ -22,17 +22,16 @@ A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notific
 
 Ensure your system meets the following requirements:
 
-- PHP **8.1.25** or higher  
+- PHP **8.1.25**  
 - Composer (PHP dependency manager)  
 - MySQL **5.7/8.0** or any database supported by Laravel  
-- Node.js & NPM *(optional – for frontend asset builds)*  
 
 <hr/>
 
 <h2 id="2-installation-procedure">2. Installation Procedure</h2>
 
 ### Step 1 – Clone the Repository
-<pre><code>git clone https://github.com/pillorajem10/chattr-api.git;
+<pre><code>git clone https://github.com/pillorajem10/chattr-api.git
 cd chattr-api
 </code></pre>
 
