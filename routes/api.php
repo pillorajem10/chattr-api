@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +20,6 @@ Route::prefix('shares')->group(base_path('routes/api/shares.php'));
 Route::prefix('users')->group(base_path('routes/api/users.php'));
 Route::prefix('notifications')->group(base_path('routes/api/notifications.php'));
 Route::prefix('messages')->group(base_path('routes/api/messages.php'));
+
+// Broadcast routes for real-time features
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
