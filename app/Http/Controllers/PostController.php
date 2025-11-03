@@ -19,39 +19,64 @@ class PostController extends Controller
      */
     public function getAllPosts(Request $request)
     {
-        // Decode token
+        // Decode token to identify the current user
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Fetch posts with relations
+        // Build the base query for posts, including related data
         $postsQuery = Post::with([
             'user',
-            'share.originalPost.user' // load original shared post and its owner
-        ])->orderBy('created_at', 'desc');
+            'share.originalPost.user',
+        ])
+        ->withCount([
+            // Count only "like" reactions
+            'reactions as likesCount' => function ($query) {
+                $query->where('reaction_type', 'like');
+            },
+            // Count all comments related to this post
+            'comments as commentCount' => function ($query) {
+                $query->whereNotNull('comment_post_id');
+            },
+            // Count how many times this post was shared
+            'shares as shareCount' => function ($query) {
+                $query->whereNotNull('share_original_post_id');
+            },
+        ])
+        ->orderBy('created_at', 'desc');
 
-        // Pagination params
+        // Pagination parameters
         $pageIndex = (int) $request->query('pageIndex', 1);
         $pageSize  = (int) $request->query('pageSize', 10);
 
-        // Total records
         $totalRecords = $postsQuery->count();
         $totalPages = ceil($totalRecords / $pageSize);
 
-        // Fetch paginated
+        // Fetch paginated posts
         $posts = $postsQuery
             ->skip(($pageIndex - 1) * $pageSize)
             ->take($pageSize)
             ->get()
-            ->map(function ($post) {
+            ->map(function ($post) use ($user) {
+                // Include shared post details if applicable
                 if ($post->post_is_shared && $post->post_share_id) {
                     $share = $post->share;
                     if ($share && $share->originalPost) {
                         $post->original_post = $share->originalPost;
                     }
                 }
+
+                // Determine if the current user liked this post
+                $userReaction = $post->reactions()
+                    ->where('reaction_user_id', $user->id)
+                    ->where('reaction_type', 'like')
+                    ->first();
+
+                $post->likedByUser = (bool) $userReaction;
+                $post->user_reaction_id = $userReaction ? $userReaction->id : null;
+
                 return $post;
             });
 
-        // Return paginated response
+        // Return formatted paginated response
         return ResponseHelper::sendPaginatedResponse(
             $posts,
             $pageIndex,
@@ -60,7 +85,6 @@ class PostController extends Controller
             $totalRecords
         );
     }
-
 
     /**
      * Create a new post.

@@ -108,7 +108,7 @@ class ReactionController extends Controller
         }
 
         // Try to find a related notification for this reaction
-        $notification = Notification::where('notification_post_id', $postId)
+        $notification = Notification::where('notification_post_id', $reaction->reaction_post_id)
             ->where('notification_user_id', $reaction->reaction_user_id)
             ->where('notification_type', 'reaction')
             ->first();

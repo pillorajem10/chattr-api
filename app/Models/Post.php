@@ -53,6 +53,17 @@ class Post extends Model
     }
 
     /**
+     * Get all shares associated with this post.
+     *
+     * This defines the one-to-many relationship between
+     * the post and its shares.
+     */
+    public function shares()
+    {
+        return $this->hasMany(Share::class, 'share_original_post_id');
+    }
+
+    /**
      * Get the share associated with this post if it is a shared post.
      *
      * Defines the inverse of the one-to-many relationship.
