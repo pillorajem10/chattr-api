@@ -15,8 +15,6 @@ class PostController extends Controller
      * Get all users except the authenticated user
      * 
      * with pagination response helper
-     * 
-     * @param Request $request
      */
     public function getAllPosts(Request $request)
     {

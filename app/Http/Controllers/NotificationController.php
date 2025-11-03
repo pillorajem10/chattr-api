@@ -53,11 +53,11 @@ class NotificationController extends Controller
      * 
      * Real-time update via WebSocket
      */
-    public function markAsRead(Request $request, $id)
+    public function markAsRead(Request $request, $notificationId)
     {
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        $notification = Notification::where('id', $id)
+        $notification = Notification::where('id', $notificationId)
             ->where('notification_user_id', $user->id)
             ->first();
 

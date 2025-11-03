@@ -13,6 +13,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/', [NotificationController::class, 'getAllNotifications']);
-    Route::patch('/read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::patch('/read/{notificationId}', [NotificationController::class, 'markAsRead']);
     Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
 });

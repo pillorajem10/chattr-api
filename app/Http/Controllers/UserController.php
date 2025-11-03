@@ -58,9 +58,6 @@ class UserController extends Controller
 
     /**
      * Get user by ID
-     * 
-     * @param Request $request
-     * @param int $userId
      */
     public function getUserById(Request $request, $userId)
     {

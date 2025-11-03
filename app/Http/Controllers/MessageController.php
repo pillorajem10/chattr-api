@@ -16,10 +16,6 @@ class MessageController extends Controller
      * Get conversation between the authenticated user and another user.
      * 
      * Supports optional filtering by unread messages only.
-     * 
-     * @param Request $request
-     * @param int $receiverId
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getConversation(Request $request, $receiverId)
     {
@@ -77,9 +73,6 @@ class MessageController extends Controller
      * 
      * Validates input data and creates a new message record.
      * Broadcasts the event to the receiver in real time.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function sendMessage(Request $request)
     {
@@ -117,10 +110,6 @@ class MessageController extends Controller
      * 
      * Updates message_read status for messages between users,
      * and broadcasts a "MessageRead" event to notify the sender.
-     * 
-     * @param Request $request
-     * @param int $senderId
-     * @return \Illuminate\Http\JsonResponse
      */
     public function markConversationAsRead(Request $request, $senderId)
     {
