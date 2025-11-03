@@ -8,8 +8,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens;
-    use HasFactory;
+    use HasApiTokens, HasFactory;
 
     protected $table = 'tbl_users';
 
@@ -30,8 +29,8 @@ class User extends Authenticatable
     /**
      * Get all posts created by this user.
      *
-     * This defines the one-to-many relationship between
-     * the user and their posts.
+     * Defines a one-to-many relationship between
+     * User and Post models.
      */
     public function posts()
     {
@@ -41,8 +40,8 @@ class User extends Authenticatable
     /**
      * Get all reactions made by this user.
      *
-     * This defines the one-to-many relationship between
-     * the user and their reactions.
+     * Defines a one-to-many relationship between
+     * User and Reaction models.
      */
     public function reactions()
     {
@@ -52,8 +51,8 @@ class User extends Authenticatable
     /**
      * Get all messages sent by this user.
      *
-     * This defines the one-to-many relationship between
-     * the user and the messages they have sent.
+     * Defines a one-to-many relationship between
+     * User and Message models (as sender).
      */
     public function sentMessages()
     {
@@ -63,10 +62,9 @@ class User extends Authenticatable
     /**
      * Get all messages received by this user.
      *
-     * This defines the one-to-many relationship between
-     * the user and the messages they have received.
+     * Defines a one-to-many relationship between
+     * User and Message models (as receiver).
      */
-
     public function receivedMessages()
     {
         return $this->hasMany(Message::class, 'message_receiver_id');
@@ -75,11 +73,33 @@ class User extends Authenticatable
     /**
      * Get all comments made by this user.
      *
-     * This defines the one-to-many relationship between
-     * the user and their comments.
+     * Defines a one-to-many relationship between
+     * User and Comment models.
      */
     public function comments()
     {
         return $this->hasMany(Comment::class, 'comment_user_id');
+    }
+
+    /**
+     * Get the user who originally shared the post.
+     *
+     * Defines a belongs-to relationship to retrieve
+     * the sharing user in a shared post scenario.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'share_user_id');
+    }
+
+    /**
+     * Get the original post shared by the user.
+     *
+     * Defines a belongs-to relationship linking
+     * a shared post back to its original Post.
+     */
+    public function originalPost()
+    {
+        return $this->belongsTo(Post::class, 'share_original_post_id');
     }
 }

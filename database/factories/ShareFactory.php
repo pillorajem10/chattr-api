@@ -9,23 +9,20 @@ use App\Models\Post;
 /**
  * Factory for generating fake share data.
  *
- * This factory ensures that:
+ * Ensures:
  * - Each share belongs to a valid user.
  * - Each share references an existing original post.
- * - Shared posts have proper timestamps for realistic seed data.
  */
 class ShareFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array
-     */
     public function definition(): array
     {
+        $user = User::inRandomOrder()->first() ?? User::factory()->create();
+        $originalPost = Post::inRandomOrder()->first() ?? Post::factory()->create();
+
         return [
-            'share_user_id' => User::inRandomOrder()->first()->id ?? User::factory(),
-            'share_original_post_id' => Post::inRandomOrder()->first()->id ?? Post::factory(),
+            'share_user_id' => $user->id,
+            'share_original_post_id' => $originalPost->id,
             'created_at' => now(),
             'updated_at' => now(),
         ];

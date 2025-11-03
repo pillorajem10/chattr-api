@@ -9,29 +9,46 @@ use App\Models\Share;
 /**
  * Factory for generating fake post data.
  *
- * This factory ensures that:
+ * Ensures:
  * - Each post is created by a valid user.
- * - Shared posts optionally reference an existing Share record.
- * - The post_share_id is only set when post_is_shared is true.
+ * - If post_is_shared is true, a valid Share record is created and linked.
  */
 class PostFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array
-     */
     public function definition(): array
     {
-        $isShared = $this->faker->boolean(30);
+        $isShared = $this->faker->boolean(30); // 30% of posts are shared
+
+        // Always make sure we have a user
+        $user = User::inRandomOrder()->first() ?? User::factory()->create();
+
+        $shareId = null;
+
+        // If shared, ensure a valid Share record exists
+        if ($isShared) {
+            $originalPost = self::getOriginalPost();
+            $share = Share::factory()->create([
+                'share_user_id' => $user->id,
+                'share_original_post_id' => $originalPost->id,
+            ]);
+            $shareId = $share->id;
+        }
 
         return [
-            'post_user_id' => User::inRandomOrder()->first()->id ?? User::factory(),
-            'post_content' => $this->faker->sentence(10),
+            'post_user_id'   => $user->id,
+            'post_content'   => $this->faker->sentence(10),
             'post_is_shared' => $isShared,
-            'post_share_id' => $isShared ? (Share::inRandomOrder()->first()->id ?? null) : null,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'post_share_id'  => $shareId,
+            'created_at'     => now(),
+            'updated_at'     => now(),
         ];
+    }
+
+    /**
+     * Helper: Fetch a random existing post or create one.
+     */
+    private static function getOriginalPost()
+    {
+        return \App\Models\Post::inRandomOrder()->first() ?? \App\Models\Post::factory()->create();
     }
 }

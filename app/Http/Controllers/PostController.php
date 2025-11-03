@@ -19,26 +19,37 @@ class PostController extends Controller
      */
     public function getAllPosts(Request $request)
     {
-        // Get authenticated user ID
+        // Decode token
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Fetch posts
-        $postsQuery = Post::with('user')->orderBy('created_at', 'desc');
+        // Fetch posts with relations
+        $postsQuery = Post::with([
+            'user',
+            'share.originalPost.user' // load original shared post and its owner
+        ])->orderBy('created_at', 'desc');
 
-        // Pagination parameters
+        // Pagination params
         $pageIndex = (int) $request->query('pageIndex', 1);
         $pageSize  = (int) $request->query('pageSize', 10);
 
-        // Get total records count
+        // Total records
         $totalRecords = $postsQuery->count();
-
-        // Calculate total pages
         $totalPages = ceil($totalRecords / $pageSize);
 
-        // Fetch paginated posts
-        $posts = $postsQuery->skip(($pageIndex - 1) * $pageSize)
-                            ->take($pageSize)
-                            ->get();
+        // Fetch paginated
+        $posts = $postsQuery
+            ->skip(($pageIndex - 1) * $pageSize)
+            ->take($pageSize)
+            ->get()
+            ->map(function ($post) {
+                if ($post->post_is_shared && $post->post_share_id) {
+                    $share = $post->share;
+                    if ($share && $share->originalPost) {
+                        $post->original_post = $share->originalPost;
+                    }
+                }
+                return $post;
+            });
 
         // Return paginated response
         return ResponseHelper::sendPaginatedResponse(
@@ -49,6 +60,7 @@ class PostController extends Controller
             $totalRecords
         );
     }
+
 
     /**
      * Create a new post.

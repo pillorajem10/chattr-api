@@ -37,12 +37,49 @@ class DatabaseSeeder extends Seeder
         }
         $this->command->info("----------------------\n");
 
-        // --- POSTS ---
+        // --- ORIGINAL POSTS ---
+        $this->command->info("Creating base posts...");
         $users->each(function ($user) {
-            Post::factory(rand(2, 5))->create(['post_user_id' => $user->id]);
+            Post::factory(rand(3, 6))->create([
+                'post_user_id' => $user->id,
+                'post_is_shared' => false,
+                'post_share_id' => null,
+            ]);
         });
 
-        // --- COMMENTS, REACTIONS, AND COMMENT NOTIFICATIONS ---
+        // --- SHARED POSTS ---
+        $this->command->info("Creating shared posts...");
+        $allPosts = Post::all();
+        foreach ($allPosts->random(min(5, $allPosts->count())) as $originalPost) {
+            $sharer = $users->where('id', '!=', $originalPost->post_user_id)->random();
+
+            // Create a share record first
+            $share = Share::factory()->create([
+                'share_user_id' => $sharer->id,
+                'share_original_post_id' => $originalPost->id,
+            ]);
+
+            // Then create the actual shared post that references the share
+            Post::factory()->create([
+                'post_user_id' => $sharer->id,
+                'post_content' => 'Check this out! 🔁',
+                'post_is_shared' => true,
+                'post_share_id' => $share->id,
+            ]);
+
+            // Notify the original post owner
+            if ($sharer->id !== $originalPost->post_user_id) {
+                Notification::factory()->create([
+                    'notification_user_id' => $originalPost->post_user_id,
+                    'notification_post_id' => $originalPost->id,
+                    'notification_type' => 'share',
+                    'notification_message' => "{$sharer->user_fname} shared your post",
+                ]);
+            }
+        }
+
+        // --- COMMENTS & REACTIONS ---
+        $this->command->info("Creating comments and reactions...");
         foreach (Post::inRandomOrder()->take(20)->get() as $post) {
             $commenter = $users->random();
             $comment = Comment::factory()->create([
@@ -50,7 +87,6 @@ class DatabaseSeeder extends Seeder
                 'comment_user_id' => $commenter->id,
             ]);
 
-            // Notification for comment
             if ($commenter->id !== $post->post_user_id) {
                 Notification::factory()->create([
                     'notification_user_id' => $post->post_user_id,
@@ -67,7 +103,6 @@ class DatabaseSeeder extends Seeder
                 'reaction_user_id' => $reactor->id,
             ]);
 
-            // Notification for reaction
             if ($reactor->id !== $post->post_user_id) {
                 Notification::factory()->create([
                     'notification_user_id' => $post->post_user_id,
@@ -78,26 +113,8 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // --- SHARES ---
-        foreach (Post::inRandomOrder()->take(5)->get() as $post) {
-            $sharer = $users->random();
-            $share = Share::factory()->create([
-                'share_user_id' => $sharer->id,
-                'share_original_post_id' => $post->id,
-            ]);
-
-            // Notification for share
-            if ($sharer->id !== $post->post_user_id) {
-                Notification::factory()->create([
-                    'notification_user_id' => $post->post_user_id,
-                    'notification_post_id' => $post->id,
-                    'notification_type' => 'share',
-                    'notification_message' => "{$sharer->user_fname} shared your post",
-                ]);
-            }
-        }
-
         // --- MESSAGES ---
+        $this->command->info("Creating messages...");
         for ($i = 0; $i < 30; $i++) {
             $sender = $users->random();
             $receiver = $users->where('id', '!=', $sender->id)->random();
@@ -113,6 +130,17 @@ class DatabaseSeeder extends Seeder
             'notification_read' => false,
         ]);
 
-        $this->command->info("\nDatabase seeding completed successfully.");
+        // --- DATA INTEGRITY CLEANUP ---
+        $this->command->info("Running integrity cleanup...");
+
+        // Remove invalid shared posts
+        Post::where('post_is_shared', true)
+            ->whereNull('post_share_id')
+            ->delete();
+
+        // Remove orphan shares with missing posts
+        Share::doesntHave('originalPost')->delete();
+
+        $this->command->info("\n✅ Database seeding completed successfully and verified for data integrity.\n");
     }
 }

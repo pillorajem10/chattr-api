@@ -51,4 +51,14 @@ class Post extends Model
     {
         return $this->hasMany(Comment::class, 'comment_post_id');
     }
+
+    /**
+     * Get the share associated with this post if it is a shared post.
+     *
+     * Defines the inverse of the one-to-many relationship.
+     */
+    public function share()
+    {
+        return $this->belongsTo(Share::class, 'post_share_id');
+    }
 }
