@@ -9,6 +9,7 @@ use App\Helpers\TokenHelper;
 use App\Models\Post;
 use App\Models\Share;
 use App\Models\Notification;
+use App\Http\Validations\ShareValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,7 +29,7 @@ class ShareController extends Controller
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             "share_caption" => "nullable|string|max:1000",
-        ]);
+        ], ShareValidationMessages::share());
 
         if ($validator->fails()) {
             return ResponseHelper::validationError($validator->errors());

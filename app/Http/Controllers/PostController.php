@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
 use App\Models\Post;
 use App\Models\Share;
+use App\Http\Validations\PostValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -62,7 +63,7 @@ class PostController extends Controller
         // Validate incoming request data
         $validator = Validator::make($request->all(), [
             'post_content' => 'required|string|max:1000',
-        ]);
+        ], PostValidationMessages::create());
 
         // Return validation errors if any
         if ($validator->fails()) {

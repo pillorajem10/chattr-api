@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Models\User;
+use App\Http\Validations\AuthValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +31,7 @@ class AuthController extends Controller
             'user_email' => 'required|email|max:100',
             'user_password' => 'required|string|min:6',
             'user_bio' => 'nullable|string|max:500',
-        ]);
+        ], AuthValidationMessages::register());
 
         // Return validation errors if any
         if ($validator->fails()) {
@@ -72,7 +73,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'user_email' => 'required|email|max:100',
             'user_password' => 'required|string|min:6',
-        ]);
+        ], AuthValidationMessages::login());
 
         // Return validation errors if any
         if ($validator->fails()) {

@@ -7,6 +7,7 @@ use App\Events\MessageRead;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
 use App\Models\Message;
+use App\Http\Validations\MessageValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -83,7 +84,7 @@ class MessageController extends Controller
         $validator = Validator::make($request->all(), [
             'message_receiver_id' => 'required|integer|exists:tbl_users,id',
             'message_content'     => 'required|string|max:2000',
-        ]);
+        ], MessageValidationMessages::send());
 
         // Return first validation error if any
         if ($validator->fails()) {

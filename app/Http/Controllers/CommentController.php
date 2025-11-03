@@ -11,6 +11,7 @@ use App\Helpers\TokenHelper;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\Notification;
+use App\Http\Validations\CommentValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -38,7 +39,7 @@ class CommentController extends Controller
         // Validate incoming request data
         $validator = Validator::make($request->all(), [
             'comment_content' => 'required|string|max:500',
-        ]);
+        ], CommentValidationMessages::create());
 
         // Return validation errors if any
         if ($validator->fails()) {
