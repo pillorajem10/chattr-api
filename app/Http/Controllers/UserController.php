@@ -60,12 +60,12 @@ class UserController extends Controller
      * Get user by ID
      * 
      * @param Request $request
-     * @param int $id
+     * @param int $userId
      */
-    public function getUserById(Request $request, $id)
+    public function getUserById(Request $request, $userId)
     {
         // Fetch user by ID
-        $user = User::find($id);
+        $user = User::find($userId);
 
         // Check if user exists
         if (!$user) {
