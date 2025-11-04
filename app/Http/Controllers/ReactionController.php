@@ -66,7 +66,7 @@ class ReactionController extends Controller
                 'notification_message' => "{$user->user_fname} {$user->user_lname} reacted to your post.",
             ]);
 
-            event(new NotificationCreated($notification));
+            broadcast(new NotificationCreated($notification));
         }
 
         // Return the created reaction with success response
@@ -129,7 +129,7 @@ class ReactionController extends Controller
             ->first();
 
         if ($notification) {
-            event(new NotificationRemoved($notification));
+            broadcast(new NotificationRemoved($notification));
             $notification->delete();
         }
 
