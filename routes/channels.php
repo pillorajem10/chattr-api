@@ -68,8 +68,8 @@ Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
  * - ReactionCreated
  * - ReactionRemoved
  */
-Broadcast::channel('reactions.{postId}', function ($postId) {
-    return new Channel('reactions.' . $postId);
+Broadcast::channel('reactions', function () {
+    return true; // allow all clients to listen
 });
 
 /**

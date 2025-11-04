@@ -21,7 +21,7 @@ class ReactionCreated implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('reactions.' . $this->reaction->post_id);
+        return new Channel('reactions');
     }
 
     public function broadcastAs()
