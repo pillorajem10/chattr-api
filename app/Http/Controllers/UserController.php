@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     /**
      * Get all users except the authenticated user
-     * 
+     *
      * with pagination response helper
-     * 
+     *
      * @param Request $request
      */
     public function getAllUsers(Request $request)
@@ -65,7 +65,7 @@ class UserController extends Controller
         $user = User::find($userId);
 
         // Check if user exists
-        if (!$user) {
+        if (! $user) {
             return ResponseHelper::sendError('User not found', null, 404);
         }
 

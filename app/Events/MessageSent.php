@@ -3,11 +3,11 @@
 namespace App\Events;
 
 use App\Models\Message;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 /**
  * Broadcasted when a private message is sent.
@@ -16,7 +16,9 @@ use Illuminate\Broadcasting\InteractsWithSockets;
  */
 class MessageSent implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The message being broadcast.

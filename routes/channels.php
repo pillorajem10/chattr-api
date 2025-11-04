@@ -69,7 +69,7 @@ Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
  * - ReactionRemoved
  */
 Broadcast::channel('reactions.{postId}', function ($user, $postId) {
-    return !is_null($user);
+    return ! is_null($user);
 });
 
 /**
@@ -84,5 +84,5 @@ Broadcast::channel('reactions.{postId}', function ($user, $postId) {
  * - CommentRemoved
  */
 Broadcast::channel('comments.{postId}', function ($user, $postId) {
-    return !is_null($user);
+    return ! is_null($user);
 });

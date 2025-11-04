@@ -2,11 +2,11 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 /**
  * Broadcasted when messages from a specific sender
@@ -17,7 +17,9 @@ use Illuminate\Broadcasting\InteractsWithSockets;
  */
 class MessageRead implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The ID of the original message sender.

@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Events\ChatroomCreated;
-use App\Events\MessageSent;
 use App\Events\MessageRead;
+use App\Events\MessageSent;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
 use App\Http\Validations\MessageValidationMessages;
-use App\Http\Validations\CommentValidationMessages;
 use App\Models\Chatroom;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -24,20 +23,20 @@ class MessageController extends Controller
     public function getUserChatrooms(Request $request)
     {
         $user = TokenHelper::decodeToken($request->header('Authorization'));
-        $filter = $request->query('filter', 'all'); 
+        $filter = $request->query('filter', 'all');
 
         // Get all chatrooms the user is part of
         $chatrooms = Chatroom::where(function ($q) use ($user) {
-                $q->where('cr_user_one_id', $user->id)
-                ->orWhere('cr_user_two_id', $user->id);
-            })
+            $q->where('cr_user_one_id', $user->id)
+            ->orWhere('cr_user_two_id', $user->id);
+        })
             ->with([
-                'userOne:id,user_fname,user_lname',
-                'userTwo:id,user_fname,user_lname',
-                'messages' => function ($q) {
-                    $q->latest()->limit(1); // get latest message only
-                }
-            ])
+            'userOne:id,user_fname,user_lname',
+            'userTwo:id,user_fname,user_lname',
+            'messages' => function ($q) {
+                $q->latest()->limit(1);
+            },
+        ])
             ->get();
 
         // Attach unread count for each chatroom
@@ -51,7 +50,7 @@ class MessageController extends Controller
         if ($filter === 'unread') {
             $chatrooms = $chatrooms->filter(function ($chatroom) {
                 return $chatroom->unread_count > 0;
-            })->values(); 
+            })->values();
         }
 
         // Sort chatrooms by latest message timestamp
@@ -75,7 +74,7 @@ class MessageController extends Controller
 
         $chatroom = Chatroom::find($chatroomId);
 
-        if (!$chatroom || !$chatroom->hasParticipant($user->id)) {
+        if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
             return ResponseHelper::sendError('You are not authorized to view this chatroom.', null, 403);
         }
 
@@ -124,9 +123,9 @@ class MessageController extends Controller
 
         // Find or create chatroom
         $chatroom = Chatroom::where(function ($q) use ($user, $request) {
-                $q->where('cr_user_one_id', $user->id)
-                  ->where('cr_user_two_id', $request->message_receiver_id);
-            })
+            $q->where('cr_user_one_id', $user->id)
+              ->where('cr_user_two_id', $request->message_receiver_id);
+        })
             ->orWhere(function ($q) use ($user, $request) {
                 $q->where('cr_user_one_id', $request->message_receiver_id)
                   ->where('cr_user_two_id', $user->id);
@@ -135,15 +134,13 @@ class MessageController extends Controller
 
         $isNewChatroom = false;
 
-        if (!$chatroom) {
+        if (! $chatroom) {
             $chatroom = Chatroom::create([
                 'cr_user_one_id' => $user->id,
                 'cr_user_two_id' => $request->message_receiver_id,
             ]);
 
             $isNewChatroom = true;
-
-            // Broadcast event for both users when a new chatroom is created
             broadcast(new ChatroomCreated($chatroom))->toOthers();
         }
 
@@ -174,7 +171,7 @@ class MessageController extends Controller
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
         $chatroom = Chatroom::find($chatroomId);
-        if (!$chatroom || !$chatroom->hasParticipant($user->id)) {
+        if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
             return ResponseHelper::sendError('You are not authorized to access this chatroom.', null, 403);
         }
 

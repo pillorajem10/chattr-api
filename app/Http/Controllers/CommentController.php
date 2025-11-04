@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\NotificationCreated;
-use App\Events\NotificationRemoved;
 use App\Events\CommentCreated;
 use App\Events\CommentRemoved;
+use App\Events\NotificationCreated;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\Notification;
 use App\Http\Validations\CommentValidationMessages;
+use App\Models\Comment;
+use App\Models\Notification;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -23,7 +22,7 @@ class CommentController extends Controller
      * Validates input data and creates a new comment in the database.
      * Notifies the post owner about the new comment.
      * Real-time broadcasting of the new comment event.
-     * 
+     *
      */
     public function commentOnPost(Request $request, $postId)
     {
@@ -32,7 +31,7 @@ class CommentController extends Controller
 
         // Verify that the post exists
         $post = Post::find($postId);
-        if (!$post) {
+        if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
@@ -79,7 +78,7 @@ class CommentController extends Controller
 
     /**
      * Get comments for a post.
-     * 
+     *
      */
     public function getCommentsForPost(Request $request, $postId)
     {
@@ -94,7 +93,7 @@ class CommentController extends Controller
 
     /**
      * Remove a comment from a post.
-     * 
+     *
      * Real-time broadcasting of the comment removed event.
      */
     public function removeCommentFromPost(Request $request, $commentId)
@@ -104,7 +103,7 @@ class CommentController extends Controller
 
         // Verify that the comment exists
         $comment = Comment::find($commentId);
-        if (!$comment) {
+        if (! $comment) {
             return ResponseHelper::sendError('Comment not found.', null, 404);
         }
 

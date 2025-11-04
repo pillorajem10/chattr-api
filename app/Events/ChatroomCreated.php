@@ -3,11 +3,11 @@
 namespace App\Events;
 
 use App\Models\Chatroom;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 /**
  * Broadcasted when a new private chatroom is created.
@@ -17,7 +17,9 @@ use Illuminate\Broadcasting\InteractsWithSockets;
  */
 class ChatroomCreated implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The chatroom that was created.

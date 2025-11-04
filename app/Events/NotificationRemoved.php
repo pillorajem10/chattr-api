@@ -2,15 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class NotificationRemoved implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The notification data to broadcast.
@@ -27,7 +29,7 @@ class NotificationRemoved implements ShouldBroadcast
 
     /**
      * Broadcast over a private channel.
-     * 
+     *
      * This ensures only authorized clients (like the intended user)
      * receive real-time updates when a notification is cleared or removed.
      */
@@ -38,7 +40,7 @@ class NotificationRemoved implements ShouldBroadcast
 
     /**
      * The event name used on the frontend listener.
-     * 
+     *
      * Example listener:
      * `.listen('.notification.removed', callback)`
      */

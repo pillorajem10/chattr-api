@@ -12,10 +12,10 @@ class NotificationController extends Controller
 {
     /**
      * Get all notifications for the authenticated user (with pagination)
-     * 
+     *
      * Filters: all, unread
      * @param Request $request
-     * 
+     *
      */
     public function getAllNotifications(Request $request)
     {
@@ -50,7 +50,7 @@ class NotificationController extends Controller
 
     /**
      * Mark a single notification as read
-     * 
+     *
      * Real-time update via WebSocket
      */
     public function markAsRead(Request $request, $notificationId)
@@ -61,7 +61,7 @@ class NotificationController extends Controller
             ->where('notification_user_id', $user->id)
             ->first();
 
-        if (!$notification) {
+        if (! $notification) {
             return ResponseHelper::sendError('Notification not found', null, 404);
         }
 
@@ -80,7 +80,7 @@ class NotificationController extends Controller
 
     /**
      * Mark all notifications as read for the authenticated user
-     * 
+     *
      * Real-time updates via WebSocket
      */
     public function markAllAsRead(Request $request)

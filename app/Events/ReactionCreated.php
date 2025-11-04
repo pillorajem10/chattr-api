@@ -2,17 +2,19 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class ReactionCreated implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
-    /** 
+    /**
      * The reaction data to broadcast.
      */
     public $reaction;
@@ -20,7 +22,7 @@ class ReactionCreated implements ShouldBroadcast
     /**
      * Create a new event instance.
      *
-     * @param  mixed  $reaction  The reaction model or payload.
+     * @param mixed $reaction The reaction model or payload.
      */
     public function __construct($reaction)
     {
@@ -30,7 +32,7 @@ class ReactionCreated implements ShouldBroadcast
     /**
      * Define the broadcast channel.
      *
-     * Using a private channel here means only authorized clients 
+     * Using a private channel here means only authorized clients
      * can listen for new reactions.
      */
     public function broadcastOn()
@@ -41,7 +43,7 @@ class ReactionCreated implements ShouldBroadcast
     /**
      * Define the event name for the frontend listener.
      *
-     * This keeps the frontend subscription syntax simple 
+     * This keeps the frontend subscription syntax simple
      * (e.g. `.listen('.reaction.created', callback)`).
      */
     public function broadcastAs()

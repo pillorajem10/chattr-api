@@ -2,15 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\Post;
-use App\Models\Message;
 use App\Models\Chatroom;
-use App\Models\Notification;
 use App\Models\Comment;
+use App\Models\Message;
+use App\Models\Notification;
+use App\Models\Post;
 use App\Models\Reaction;
 use App\Models\Share;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 /**
  * DatabaseSeeder
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info("----------------------\n");
 
         // --- ORIGINAL POSTS ---
-        $this->command->info("Creating base posts...");
+        $this->command->info('Creating base posts...');
         $users->each(function ($user) {
             Post::factory(rand(3, 6))->create([
                 'post_user_id' => $user->id,
@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
         });
 
         // --- SHARED POSTS ---
-        $this->command->info("Creating shared posts...");
+        $this->command->info('Creating shared posts...');
         $allPosts = Post::all();
         foreach ($allPosts->random(min(5, $allPosts->count())) as $originalPost) {
             $sharer = $users->where('id', '!=', $originalPost->post_user_id)->random();
@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // --- COMMENTS & REACTIONS ---
-        $this->command->info("Creating comments and reactions...");
+        $this->command->info('Creating comments and reactions...');
         foreach (Post::inRandomOrder()->take(20)->get() as $post) {
             $commenter = $users->random();
             $comment = Comment::factory()->create([
@@ -115,7 +115,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // --- MESSAGES ---
-        $this->command->info("Creating chatrooms and messages...");
+        $this->command->info('Creating chatrooms and messages...');
 
         // Create around 10 chatrooms with messages
         for ($i = 0; $i < 10; $i++) {
@@ -147,7 +147,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // --- DATA INTEGRITY CLEANUP ---
-        $this->command->info("Running integrity cleanup...");
+        $this->command->info('Running integrity cleanup...');
 
         // Remove invalid shared posts
         Post::where('post_is_shared', true)

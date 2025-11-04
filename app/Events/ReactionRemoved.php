@@ -2,15 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class ReactionRemoved implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The reaction data to broadcast.
@@ -20,7 +22,7 @@ class ReactionRemoved implements ShouldBroadcast
     /**
      * Create a new event instance.
      *
-     * @param  mixed  $reaction  The reaction model or payload.
+     * @param mixed $reaction The reaction model or payload.
      */
     public function __construct($reaction)
     {

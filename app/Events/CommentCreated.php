@@ -2,15 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class CommentCreated implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The comment data to broadcast.
@@ -27,7 +29,7 @@ class CommentCreated implements ShouldBroadcast
 
     /**
      * Broadcast over a private channel.
-     * 
+     *
      * Keeps comments secure so only authorized users
      * (like those viewing the post) receive them in real time.
      */

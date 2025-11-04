@@ -2,15 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class CommentRemoved implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The comment data to broadcast.
@@ -27,8 +29,8 @@ class CommentRemoved implements ShouldBroadcast
 
     /**
      * Broadcast over a private channel.
-     * 
-     * Keeps comment removals secure and synced only 
+     *
+     * Keeps comment removals secure and synced only
      * for authorized users (e.g., post viewers).
      */
     public function broadcastOn()

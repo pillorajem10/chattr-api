@@ -63,7 +63,7 @@ class Chatroom extends Model
         })->first();
 
         // If not existing, create it
-        if (!$chatroom) {
+        if (! $chatroom) {
             $chatroom = self::create([
                 'cr_user_one_id' => $userA,
                 'cr_user_two_id' => $userB,

@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Events\NotificationCreated;
-use App\Events\NotificationRemoved;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
+use App\Http\Validations\ShareValidationMessages;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\Share;
-use App\Models\Notification;
-use App\Http\Validations\ShareValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,14 +20,14 @@ class ShareController extends Controller
      * Validates input data and creates a new share in the database.
      * Notifies the post owner about the new share.
      * Real-time broadcasting of the new share event.
-     * 
+     *
      * A new "Post" will be created with post_is_shared set to true.
      */
     public function sharePost(Request $request, $postId)
     {
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
-            "share_caption" => "nullable|string|max:1000",
+            'share_caption' => 'nullable|string|max:1000',
         ], ShareValidationMessages::share());
 
         if ($validator->fails()) {
@@ -39,7 +38,7 @@ class ShareController extends Controller
         $originalPost = Post::find($postId);
 
         // Check if the original post exists
-        if (!$originalPost) {
+        if (! $originalPost) {
             return ResponseHelper::sendError('Original post not found.', null, 404);
         }
 

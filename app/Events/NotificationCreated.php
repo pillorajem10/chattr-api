@@ -2,15 +2,17 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithSockets;
 
 class NotificationCreated implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The notification data to broadcast.
@@ -27,8 +29,8 @@ class NotificationCreated implements ShouldBroadcast
 
     /**
      * Broadcast over a private channel.
-     * 
-     * This keeps notifications secure so that only 
+     *
+     * This keeps notifications secure so that only
      * the intended user (or authorized clients) receive them.
      */
     public function broadcastOn()

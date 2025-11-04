@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ReactionCreated;
-use App\Events\ReactionRemoved;
 use App\Events\NotificationCreated;
 use App\Events\NotificationRemoved;
+use App\Events\ReactionCreated;
+use App\Events\ReactionRemoved;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
 use App\Models\Notification;
-use App\Models\Reaction;
 use App\Models\Post;
+use App\Models\Reaction;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class ReactionController extends Controller
 {
@@ -29,7 +28,7 @@ class ReactionController extends Controller
 
         // Verify that the post exists
         $post = Post::find($postId);
-        if (!$post) {
+        if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
@@ -67,10 +66,10 @@ class ReactionController extends Controller
 
         return ResponseHelper::sendSuccess($reaction, 'Reaction added successfully.', 201);
     }
-    
+
     /**
      * Get reactions for a posts
-     * 
+     *
      */
     public function getReactionsForPost(Request $request, $postId)
     {
@@ -85,12 +84,12 @@ class ReactionController extends Controller
 
     /**
      * Remove existing reaction to post
-     * 
+     *
      */
     public static function removeReactionToPost(Request $request, $reactionId)
     {
         // Make sure reaction ID is provided
-        if (!$reactionId) {
+        if (! $reactionId) {
             return ResponseHelper::sendError('Reaction ID is required.', null, 400);
         }
 
@@ -103,7 +102,7 @@ class ReactionController extends Controller
             ->first();
 
         // Check if the reaction exists before proceeding
-        if (!$reaction) {
+        if (! $reaction) {
             return ResponseHelper::sendError('Reaction not found.', null, 404);
         }
 

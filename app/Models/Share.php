@@ -23,7 +23,7 @@ class Share extends Model
      *
      * Defines the inverse of a one-to-many relationship between
      * a shared post and its corresponding Share record.
-     * 
+     *
      * Example:
      * A post with post_is_shared = true can reference this Share record
      * to find its sharing metadata.

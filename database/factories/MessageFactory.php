@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\User;
 use App\Models\Chatroom;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * Factory for generating fake private messages between users.
@@ -27,7 +27,7 @@ class MessageFactory extends Factory
         // Pick an existing chatroom or create one with two users
         $chatroom = Chatroom::inRandomOrder()->first();
 
-        if (!$chatroom) {
+        if (! $chatroom) {
             $userOne = User::factory()->create();
             $userTwo = User::factory()->create();
 

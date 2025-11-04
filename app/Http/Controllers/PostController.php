@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
+use App\Http\Validations\PostValidationMessages;
 use App\Models\Post;
 use App\Models\Share;
-use App\Http\Validations\PostValidationMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,7 +14,7 @@ class PostController extends Controller
 {
     /**
      * Get all users except the authenticated user
-     * 
+     *
      * with pagination response helper
      */
     public function getAllPosts(Request $request)
@@ -128,7 +128,7 @@ class PostController extends Controller
     public static function getPostById($postId)
     {
         // Validate postId
-        if (!$postId) {
+        if (! $postId) {
             return ResponseHelper::sendError('Post ID is required.', null, 400);
         }
 
@@ -136,7 +136,7 @@ class PostController extends Controller
         $post = Post::with('user')->find($postId);
 
         // Check if post exists
-        if (!$post) {
+        if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
@@ -146,13 +146,13 @@ class PostController extends Controller
 
     /**
      * Delete Post By ID
-     * 
+     *
      * If its a shared post the share record will be deleted as well
      */
     public static function deletePostById(Request $request, $postId)
     {
         // Validate postId
-        if (!$postId) {
+        if (! $postId) {
             return ResponseHelper::sendError('Post ID is required.', null, 400);
         }
 
@@ -163,7 +163,7 @@ class PostController extends Controller
         $post = Post::find($postId);
 
         // Check if post exists
-        if (!$post) {
+        if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 

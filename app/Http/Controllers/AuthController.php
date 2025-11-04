@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHelper;
-use App\Models\User;
 use App\Http\Validations\AuthValidationMessages;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -88,7 +88,7 @@ class AuthController extends Controller
         $user = User::where('user_email', $request->user_email)->first();
 
         // Validate user credentials
-        if (!$user || !Hash::check($request->user_password, $user->user_password)) {
+        if (! $user || ! Hash::check($request->user_password, $user->user_password)) {
             return ResponseHelper::sendError('Invalid email or password.', null, 401);
         }
 
