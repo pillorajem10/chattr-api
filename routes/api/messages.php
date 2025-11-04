@@ -16,4 +16,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/{chatroomId}', [MessageController::class, 'getConversation']);
     Route::post('/', [MessageController::class, 'sendMessage']);
     Route::patch('/{chatroomId}/mark-read', [MessageController::class, 'markConversationAsRead']);
+    Route::post('/create-chatroom', [MessageController::class, 'createChatroom']);
 });

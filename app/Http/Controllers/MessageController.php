@@ -104,8 +104,64 @@ class MessageController extends Controller
     }
 
     /**
-     * Send a new private message.
-     * Automatically creates or retrieves a chatroom between users.
+     * Create a new private chatroom between two users (no message is sent).
+     */
+    public function createChatroom(Request $request)
+    {
+        $user = TokenHelper::decodeToken($request->header('Authorization'));
+
+        $validator = Validator::make($request->all(), [
+            'receiver_id' => 'required|integer|exists:tbl_users,id',
+        ], [
+            'receiver_id.required' => 'Receiver ID is required.',
+            'receiver_id.exists'   => 'The specified user does not exist.',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = collect($validator->errors()->all())->first();
+            return ResponseHelper::sendError($firstError, null, 422);
+        }
+
+        // Prevent creating a chatroom with the same user
+        if ((int) $request->receiver_id === (int) $user->id) {
+            return ResponseHelper::sendError('You cannot create a chatroom with yourself.', null, 422);
+        }
+
+        // Check if a chatroom already exists between the two users
+        $existing = Chatroom::where(function ($q) use ($user, $request) {
+            $q->where('cr_user_one_id', $user->id)
+            ->where('cr_user_two_id', $request->receiver_id);
+        })
+        ->orWhere(function ($q) use ($user, $request) {
+            $q->where('cr_user_one_id', $request->receiver_id)
+            ->where('cr_user_two_id', $user->id);
+        })
+        ->first();
+
+        if ($existing) {
+            return ResponseHelper::sendSuccess([
+                'chatroom' => $existing,
+                'new_chatroom' => false,
+            ], 'Chatroom already exists.');
+        }
+
+        // Create a new chatroom record
+        $chatroom = Chatroom::create([
+            'cr_user_one_id' => $user->id,
+            'cr_user_two_id' => $request->receiver_id,
+        ]);
+
+        // Optionally broadcast the creation event for real-time updates
+        broadcast(new ChatroomCreated($chatroom))->toOthers();
+
+        return ResponseHelper::sendSuccess([
+            'chatroom' => $chatroom,
+            'new_chatroom' => true,
+        ], 'Chatroom created successfully.', 201);
+    }
+
+    /**
+     * Send a new private message inside an existing chatroom.
      */
     public function sendMessage(Request $request)
     {
@@ -113,6 +169,7 @@ class MessageController extends Controller
 
         $validator = Validator::make($request->all(), [
             'message_receiver_id' => 'required|integer|exists:tbl_users,id',
+            'message_chatroom_id' => 'required|integer|exists:tbl_chatrooms,id',
             'message_content'     => 'required|string|max:2000',
         ], MessageValidationMessages::send());
 
@@ -121,30 +178,14 @@ class MessageController extends Controller
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
-        // Find or create chatroom
-        $chatroom = Chatroom::where(function ($q) use ($user, $request) {
-            $q->where('cr_user_one_id', $user->id)
-              ->where('cr_user_two_id', $request->message_receiver_id);
-        })
-            ->orWhere(function ($q) use ($user, $request) {
-                $q->where('cr_user_one_id', $request->message_receiver_id)
-                  ->where('cr_user_two_id', $user->id);
-            })
-            ->first();
+        // Retrieve the specified chatroom
+        $chatroom = Chatroom::find($request->message_chatroom_id);
 
-        $isNewChatroom = false;
-
-        if (! $chatroom) {
-            $chatroom = Chatroom::create([
-                'cr_user_one_id' => $user->id,
-                'cr_user_two_id' => $request->message_receiver_id,
-            ]);
-
-            $isNewChatroom = true;
-            broadcast(new ChatroomCreated($chatroom))->toOthers();
+        if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
+            return ResponseHelper::sendError('You are not authorized to send messages in this chatroom.', null, 403);
         }
 
-        // Create message inside that chatroom
+        // Create a message under the existing chatroom
         $message = Message::create([
             'message_sender_id'   => $user->id,
             'message_receiver_id' => $request->message_receiver_id,
@@ -154,13 +195,10 @@ class MessageController extends Controller
 
         broadcast(new MessageSent($message))->toOthers();
 
-        $responseData = [
+        return ResponseHelper::sendSuccess([
             'chatroom' => $chatroom,
             'message'  => $message,
-            'new_chatroom' => $isNewChatroom,
-        ];
-
-        return ResponseHelper::sendSuccess($responseData, 'Message sent successfully.', 201);
+        ], 'Message sent successfully.', 201);
     }
 
     /**
