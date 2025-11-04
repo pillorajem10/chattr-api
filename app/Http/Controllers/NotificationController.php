@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\NotificationRead;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
 use App\Models\Notification;
@@ -72,9 +71,6 @@ class NotificationController extends Controller
 
         $notification->update(['notification_read' => true]);
 
-        // Fire WebSocket event for real-time update
-        event(new NotificationRead($notification));
-
         return ResponseHelper::sendSuccess($notification, 'Notification marked as read.');
     }
 
@@ -99,11 +95,6 @@ class NotificationController extends Controller
         Notification::where('notification_user_id', $user->id)
             ->where('notification_read', false)
             ->update(['notification_read' => true]);
-
-        // Optional: Broadcast that notifications were read
-        foreach ($unread as $notif) {
-            event(new NotificationRead($notif));
-        }
 
         return ResponseHelper::sendSuccess(null, 'All notifications marked as read.');
     }

@@ -17,9 +17,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class ChatroomCreated implements ShouldBroadcast
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * The chatroom that was created.
@@ -33,7 +31,8 @@ class ChatroomCreated implements ShouldBroadcast
      */
     public function __construct(Chatroom $chatroom)
     {
-        $this->chatroom = $chatroom;
+        // Load relationships so frontend can access both users' names immediately
+        $this->chatroom = $chatroom->load(['userOne', 'userTwo']);
     }
 
     /**
@@ -57,5 +56,24 @@ class ChatroomCreated implements ShouldBroadcast
     public function broadcastAs(): string
     {
         return 'chatroom.created';
+    }
+
+    /**
+     * Data passed to the broadcast.
+     *
+     * This ensures the frontend receives complete user data.
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'chatroom' => [
+                'id' => $this->chatroom->id,
+                'cr_user_one_id' => $this->chatroom->cr_user_one_id,
+                'cr_user_two_id' => $this->chatroom->cr_user_two_id,
+                'user_one' => $this->chatroom->userOne,
+                'user_two' => $this->chatroom->userTwo,
+                'created_at' => $this->chatroom->created_at,
+            ],
+        ];
     }
 }

@@ -21,26 +21,31 @@ use Illuminate\Support\Facades\Broadcast;
  *
  * Used by:
  * - NotificationCreated
- * - NotificationRead
- * - NotificationRemoved
  */
 Broadcast::channel('notifications.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
 });
 
 /**
- * Messages Channel
+ * Chatroom Channel
  * ------------------------------------------------------------
- * Handles private messages between users. Each user has their
- * own message channel, ensuring messages are delivered securely
- * and only to the correct recipient.
+ * Handles all messages and read events inside a specific chatroom.
+ * Ensures only the two participants in that chatroom can subscribe.
  *
  * Used by:
  * - MessageSent
  * - MessageRead
  */
-Broadcast::channel('messages.{userId}', function ($user, $userId) {
-    return (int) $user->id === (int) $userId;
+Broadcast::channel('chatroom.{chatroomId}', function ($user, $chatroomId) {
+    $chatroom = \App\Models\Chatroom::find($chatroomId);
+
+    if (!$chatroom) {
+        return false;
+    }
+
+    // Authorize only if the user is one of the two participants
+    return (int) $user->id === (int) $chatroom->cr_user_one_id ||
+           (int) $user->id === (int) $chatroom->cr_user_two_id;
 });
 
 /**

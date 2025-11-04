@@ -12,16 +12,16 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Broadcasted when a private message is sent.
  *
- * Notifies the receiver in real time about the new message.
+ * Notifies the intended receiver in real time with full message details.
  */
 class MessageSent implements ShouldBroadcast
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * The message being broadcast.
+     *
+     * @var \App\Models\Message
      */
     public $message;
 
@@ -32,11 +32,12 @@ class MessageSent implements ShouldBroadcast
      */
     public function __construct(Message $message)
     {
-        $this->message = $message;
+        // Eager load the sender relationship so frontend can display their name or avatar
+        $this->message = $message->load('sender');
     }
 
     /**
-     * Broadcast to the receiver's private channel only.
+     * Broadcast to the receiver's private channel.
      *
      * Example: messages.{receiver_id}
      */
@@ -46,7 +47,7 @@ class MessageSent implements ShouldBroadcast
     }
 
     /**
-     * Broadcast event name.
+     * The event name to be used by Laravel Echo.
      */
     public function broadcastAs(): string
     {
@@ -54,7 +55,7 @@ class MessageSent implements ShouldBroadcast
     }
 
     /**
-     * Data passed to the broadcast.
+     * Data payload sent to the frontend.
      */
     public function broadcastWith(): array
     {
@@ -65,6 +66,7 @@ class MessageSent implements ShouldBroadcast
             'message_receiver_id' => $this->message->message_receiver_id,
             'message_content'     => $this->message->message_content,
             'message_read'        => $this->message->message_read,
+            'sender'              => $this->message->sender, 
             'created_at'          => $this->message->created_at->toDateTimeString(),
         ];
     }

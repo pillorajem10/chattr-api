@@ -25,21 +25,19 @@ class MessageController extends Controller
         $user = TokenHelper::decodeToken($request->header('Authorization'));
         $filter = $request->query('filter', 'all');
 
-        // Get all chatrooms the user is part of
         $chatrooms = Chatroom::where(function ($q) use ($user) {
             $q->where('cr_user_one_id', $user->id)
-            ->orWhere('cr_user_two_id', $user->id);
+              ->orWhere('cr_user_two_id', $user->id);
         })
-            ->with([
+        ->with([
             'userOne:id,user_fname,user_lname',
             'userTwo:id,user_fname,user_lname',
             'messages' => function ($q) {
                 $q->latest()->limit(1);
             },
         ])
-            ->get();
+        ->get();
 
-        // Attach unread count for each chatroom
         foreach ($chatrooms as $chatroom) {
             $chatroom->unread_count = Message::where('message_chatroom_id', $chatroom->id)
                 ->where('message_receiver_id', $user->id)
@@ -48,15 +46,12 @@ class MessageController extends Controller
         }
 
         if ($filter === 'unread') {
-            $chatrooms = $chatrooms->filter(function ($chatroom) {
-                return $chatroom->unread_count > 0;
-            })->values();
+            $chatrooms = $chatrooms->filter(fn($chatroom) => $chatroom->unread_count > 0)->values();
         }
 
-        // Sort chatrooms by latest message timestamp
-        $chatrooms = $chatrooms->sortByDesc(function ($chatroom) {
-            return optional($chatroom->messages->first())->created_at;
-        })->values();
+        $chatrooms = $chatrooms->sortByDesc(
+            fn($chatroom) => optional($chatroom->messages->first())->created_at
+        )->values();
 
         return ResponseHelper::sendSuccess($chatrooms, 'Chatrooms retrieved successfully.');
     }
@@ -122,19 +117,17 @@ class MessageController extends Controller
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
-        // Prevent creating a chatroom with the same user
         if ((int) $request->receiver_id === (int) $user->id) {
             return ResponseHelper::sendError('You cannot create a chatroom with yourself.', null, 422);
         }
 
-        // Check if a chatroom already exists between the two users
         $existing = Chatroom::where(function ($q) use ($user, $request) {
             $q->where('cr_user_one_id', $user->id)
-            ->where('cr_user_two_id', $request->receiver_id);
+              ->where('cr_user_two_id', $request->receiver_id);
         })
         ->orWhere(function ($q) use ($user, $request) {
             $q->where('cr_user_one_id', $request->receiver_id)
-            ->where('cr_user_two_id', $user->id);
+              ->where('cr_user_two_id', $user->id);
         })
         ->first();
 
@@ -145,13 +138,11 @@ class MessageController extends Controller
             ], 'Chatroom already exists.');
         }
 
-        // Create a new chatroom record
         $chatroom = Chatroom::create([
             'cr_user_one_id' => $user->id,
             'cr_user_two_id' => $request->receiver_id,
         ]);
 
-        // Optionally broadcast the creation event for real-time updates
         broadcast(new ChatroomCreated($chatroom))->toOthers();
 
         return ResponseHelper::sendSuccess([
@@ -178,14 +169,12 @@ class MessageController extends Controller
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
-        // Retrieve the specified chatroom
         $chatroom = Chatroom::find($request->message_chatroom_id);
 
         if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
             return ResponseHelper::sendError('You are not authorized to send messages in this chatroom.', null, 403);
         }
 
-        // Create a message under the existing chatroom
         $message = Message::create([
             'message_sender_id'   => $user->id,
             'message_receiver_id' => $request->message_receiver_id,
@@ -193,6 +182,7 @@ class MessageController extends Controller
             'message_content'     => $request->message_content,
         ]);
 
+        // Broadcast through chatroom.{id} so both participants receive the update
         broadcast(new MessageSent($message))->toOthers();
 
         return ResponseHelper::sendSuccess([
@@ -218,12 +208,12 @@ class MessageController extends Controller
             ->where('message_read', false)
             ->update(['message_read' => true]);
 
-        // Now broadcast to the sender that their messages were read
         $senderId = ($chatroom->cr_user_one_id === $user->id)
             ? $chatroom->cr_user_two_id
             : $chatroom->cr_user_one_id;
 
-        broadcast(new MessageRead($senderId, $user->id))->toOthers();
+        // Broadcast through chatroom.{id} so both participants receive read status
+        broadcast(new MessageRead($chatroom->id, $senderId, $user->id))->toOthers();
 
         return ResponseHelper::sendSuccess(null, 'Messages marked as read.', 200);
     }

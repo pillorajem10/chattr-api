@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Events\NotificationCreated;
-use App\Events\NotificationRemoved;
 use App\Events\ReactionCreated;
 use App\Events\ReactionRemoved;
 use App\Helpers\ResponseHelper;
@@ -129,7 +128,6 @@ class ReactionController extends Controller
             ->first();
 
         if ($notification) {
-            broadcast(new NotificationRemoved($notification));
             $notification->delete();
         }
 
