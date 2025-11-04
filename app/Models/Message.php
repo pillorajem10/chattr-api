@@ -16,14 +16,13 @@ class Message extends Model
         'message_receiver_id',
         'message_content',
         'message_read',
+        'message_chatroom_id',
     ];
 
     public $timestamps = true;
 
     /**
      * The user who sent this message.
-     *
-     * Defines the inverse of the one-to-many relationship.
      */
     public function sender()
     {
@@ -32,11 +31,17 @@ class Message extends Model
 
     /**
      * The user who received this message.
-     *
-     * Defines the inverse of the one-to-many relationship.
      */
     public function receiver()
     {
         return $this->belongsTo(User::class, 'message_receiver_id');
+    }
+
+    /**
+     * The chatroom this message belongs to.
+     */
+    public function chatroom()
+    {
+        return $this->belongsTo(Chatroom::class, 'message_chatroom_id');
     }
 }

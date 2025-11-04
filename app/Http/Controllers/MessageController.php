@@ -2,64 +2,99 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ChatroomCreated;
 use App\Events\MessageSent;
 use App\Events\MessageRead;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TokenHelper;
-use App\Models\Message;
 use App\Http\Validations\MessageValidationMessages;
+use App\Http\Validations\CommentValidationMessages;
+use App\Models\Chatroom;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class MessageController extends Controller
 {
     /**
-     * Get conversation between the authenticated user and another user.
-     * 
-     * Supports optional filtering by unread messages only.
+     * Get all chatrooms the authenticated user participates in.
+     *
+     * Returns each chatroom with the latest message preview.
      */
-    public function getConversation(Request $request, $receiverId)
+    public function getUserChatrooms(Request $request)
     {
-        // Decode token to get the authenticated user
         $user = TokenHelper::decodeToken($request->header('Authorization'));
+        $filter = $request->query('filter', 'all'); 
 
-        // Pagination parameters
-        $pageIndex = (int) $request->query('pageIndex', 1);
-        $pageSize  = (int) $request->query('pageSize', 20);
-
-        // Optional filter (e.g. ?filter=unread)
-        $filter = $request->query('filter', 'all');
-
-        // Base query: all messages between both users
-        $query = Message::where(function ($q) use ($user, $receiverId) {
-                $q->where('message_sender_id', $user->id)
-                ->where('message_receiver_id', $receiverId);
+        // Get all chatrooms the user is part of
+        $chatrooms = Chatroom::where(function ($q) use ($user) {
+                $q->where('cr_user_one_id', $user->id)
+                ->orWhere('cr_user_two_id', $user->id);
             })
-            ->orWhere(function ($q) use ($user, $receiverId) {
-                $q->where('message_sender_id', $receiverId)
-                ->where('message_receiver_id', $user->id);
-            });
+            ->with([
+                'userOne:id,user_fname,user_lname',
+                'userTwo:id,user_fname,user_lname',
+                'messages' => function ($q) {
+                    $q->latest()->limit(1); // get latest message only
+                }
+            ])
+            ->get();
 
-        // Apply unread filter (only messages received by the current user)
-        if ($filter === 'unread') {
-            $query->where('message_receiver_id', $user->id)
-                ->where('message_read', false);
+        // Attach unread count for each chatroom
+        foreach ($chatrooms as $chatroom) {
+            $chatroom->unread_count = Message::where('message_chatroom_id', $chatroom->id)
+                ->where('message_receiver_id', $user->id)
+                ->where('message_read', false)
+                ->count();
         }
 
-        // Order by latest first
-        $query->orderBy('created_at', 'desc');
+        if ($filter === 'unread') {
+            $chatrooms = $chatrooms->filter(function ($chatroom) {
+                return $chatroom->unread_count > 0;
+            })->values(); 
+        }
 
-        // Count total records
+        // Sort chatrooms by latest message timestamp
+        $chatrooms = $chatrooms->sortByDesc(function ($chatroom) {
+            return optional($chatroom->messages->first())->created_at;
+        })->values();
+
+        return ResponseHelper::sendSuccess($chatrooms, 'Chatrooms retrieved successfully.');
+    }
+
+    /**
+     * Get conversation messages within a specific chatroom.
+     */
+    public function getConversation(Request $request, $chatroomId)
+    {
+        $user = TokenHelper::decodeToken($request->header('Authorization'));
+
+        $pageIndex = (int) $request->query('pageIndex', 1);
+        $pageSize  = (int) $request->query('pageSize', 20);
+        $filter    = $request->query('filter', 'all');
+
+        $chatroom = Chatroom::find($chatroomId);
+
+        if (!$chatroom || !$chatroom->hasParticipant($user->id)) {
+            return ResponseHelper::sendError('You are not authorized to view this chatroom.', null, 403);
+        }
+
+        $query = Message::where('message_chatroom_id', $chatroomId);
+
+        if ($filter === 'unread') {
+            $query->where('message_receiver_id', $user->id)
+                  ->where('message_read', false);
+        }
+
         $totalRecords = $query->count();
         $totalPages   = ceil($totalRecords / $pageSize);
 
-        // Fetch paginated results
-        $messages = $query
+        $messages = $query->orderBy('created_at', 'desc')
             ->skip(($pageIndex - 1) * $pageSize)
             ->take($pageSize)
+            ->with(['sender:id,user_fname,user_lname'])
             ->get();
 
-        // Return paginated response
         return ResponseHelper::sendPaginatedResponse(
             $messages,
             $pageIndex,
@@ -70,68 +105,91 @@ class MessageController extends Controller
     }
 
     /**
-     * Send a new message to another user.
-     * 
-     * Validates input data and creates a new message record.
-     * Broadcasts the event to the receiver in real time.
+     * Send a new private message.
+     * Automatically creates or retrieves a chatroom between users.
      */
     public function sendMessage(Request $request)
     {
-        // Decode token to get the authenticated user
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Validate incoming request data
         $validator = Validator::make($request->all(), [
             'message_receiver_id' => 'required|integer|exists:tbl_users,id',
             'message_content'     => 'required|string|max:2000',
         ], MessageValidationMessages::send());
 
-        // Return first validation error if any
         if ($validator->fails()) {
             $firstError = collect($validator->errors()->all())->first();
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
-        // Create a new message record
+        // Find or create chatroom
+        $chatroom = Chatroom::where(function ($q) use ($user, $request) {
+                $q->where('cr_user_one_id', $user->id)
+                  ->where('cr_user_two_id', $request->message_receiver_id);
+            })
+            ->orWhere(function ($q) use ($user, $request) {
+                $q->where('cr_user_one_id', $request->message_receiver_id)
+                  ->where('cr_user_two_id', $user->id);
+            })
+            ->first();
+
+        $isNewChatroom = false;
+
+        if (!$chatroom) {
+            $chatroom = Chatroom::create([
+                'cr_user_one_id' => $user->id,
+                'cr_user_two_id' => $request->message_receiver_id,
+            ]);
+
+            $isNewChatroom = true;
+
+            // Broadcast event for both users when a new chatroom is created
+            broadcast(new ChatroomCreated($chatroom))->toOthers();
+        }
+
+        // Create message inside that chatroom
         $message = Message::create([
             'message_sender_id'   => $user->id,
             'message_receiver_id' => $request->message_receiver_id,
+            'message_chatroom_id' => $chatroom->id,
             'message_content'     => $request->message_content,
         ]);
 
-        // Broadcast to the receiver in real time
         broadcast(new MessageSent($message))->toOthers();
 
-        // Return success response
-        return ResponseHelper::sendSuccess($message, 'Message sent successfully.', 201);
+        $responseData = [
+            'chatroom' => $chatroom,
+            'message'  => $message,
+            'new_chatroom' => $isNewChatroom,
+        ];
+
+        return ResponseHelper::sendSuccess($responseData, 'Message sent successfully.', 201);
     }
 
     /**
-     * Mark all messages from a specific sender as read.
-     * 
-     * Updates message_read status for messages between users,
-     * and broadcasts a "MessageRead" event to notify the sender.
+     * Mark all messages in a chatroom as read for the authenticated user.
      */
-    public function markConversationAsRead(Request $request, $senderId)
+    public function markConversationAsRead(Request $request, $chatroomId)
     {
-        // Decode token to get the authenticated user
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Validate senderId
-        if (!$senderId) {
-            return ResponseHelper::sendError('Sender ID is required.', null, 400);
+        $chatroom = Chatroom::find($chatroomId);
+        if (!$chatroom || !$chatroom->hasParticipant($user->id)) {
+            return ResponseHelper::sendError('You are not authorized to access this chatroom.', null, 403);
         }
 
-        // Update message read status
-        Message::where('message_sender_id', $senderId)
+        Message::where('message_chatroom_id', $chatroomId)
             ->where('message_receiver_id', $user->id)
             ->where('message_read', false)
             ->update(['message_read' => true]);
 
-        // Broadcast read event to the sender for real-time UI update
+        // Now broadcast to the sender that their messages were read
+        $senderId = ($chatroom->cr_user_one_id === $user->id)
+            ? $chatroom->cr_user_two_id
+            : $chatroom->cr_user_one_id;
+
         broadcast(new MessageRead($senderId, $user->id))->toOthers();
 
-        // Return success response
-        return ResponseHelper::sendSuccess(null, 'Conversation marked as read.', 200);
+        return ResponseHelper::sendSuccess(null, 'Messages marked as read.', 200);
     }
 }

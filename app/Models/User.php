@@ -102,4 +102,38 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Post::class, 'share_original_post_id');
     }
+
+    /**
+     * Get all chatrooms where this user is stored as user one.
+     *
+     * Defines a one-to-many relationship between
+     * User and Chatroom models (as first participant).
+     */
+    public function chatroomsAsUserOne()
+    {
+        return $this->hasMany(Chatroom::class, 'cr_user_one_id');
+    }
+
+    /**
+     * Get all chatrooms where this user is stored as user two.
+     *
+     * Defines a one-to-many relationship between
+     * User and Chatroom models (as second participant).
+     */
+    public function chatroomsAsUserTwo()
+    {
+        return $this->hasMany(Chatroom::class, 'cr_user_two_id');
+    }
+
+    /**
+     * Retrieve all chatrooms that this user is part of.
+     *
+     * Combines chatroomsAsUserOne and chatroomsAsUserTwo
+     * to return all private message threads for this user.
+     */
+    public function allChatrooms()
+    {
+        return Chatroom::where('cr_user_one_id', $this->id)
+                       ->orWhere('cr_user_two_id', $this->id);
+    }
 }

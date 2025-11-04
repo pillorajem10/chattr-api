@@ -25,7 +25,6 @@ class UserFactory extends Factory
             'user_lname'    => $this->faker->lastName,
             'user_email'    => $this->faker->unique()->safeEmail(),
             'user_bio'      => $this->faker->optional()->sentence(),
-            // Demo password for seeded users is "password"
             'user_password' => bcrypt('password'),
             'created_at'    => now(),
             'updated_at'    => now(),

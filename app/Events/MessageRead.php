@@ -8,15 +8,36 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Broadcasting\InteractsWithSockets;
 
+/**
+ * Broadcasted when messages from a specific sender
+ * have been marked as read by the receiver.
+ *
+ * Notifies the original sender in real-time that their
+ * messages in the chatroom are now read.
+ */
 class MessageRead implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /**
+     * The ID of the original message sender.
+     *
+     * @var int
+     */
     public $senderId;
+
+    /**
+     * The ID of the user who read the messages.
+     *
+     * @var int
+     */
     public $receiverId;
 
     /**
      * Create a new event instance.
+     *
+     * @param int $senderId
+     * @param int $receiverId
      */
     public function __construct($senderId, $receiverId)
     {
@@ -26,6 +47,8 @@ class MessageRead implements ShouldBroadcast
 
     /**
      * Broadcast to the sender's private channel.
+     *
+     * Example: messages.{sender_id}
      */
     public function broadcastOn()
     {
@@ -33,22 +56,22 @@ class MessageRead implements ShouldBroadcast
     }
 
     /**
-     * Event alias name.
+     * Broadcast event name.
      */
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'message.read';
     }
 
     /**
-     * Data sent to the frontend.
+     * Data sent to the frontend when event is received.
      */
-    public function broadcastWith()
+    public function broadcastWith(): array
     {
         return [
-            'sender_id' => $this->senderId,
+            'sender_id'   => $this->senderId,
             'receiver_id' => $this->receiverId,
-            'status' => 'read'
+            'status'      => 'read',
         ];
     }
 }

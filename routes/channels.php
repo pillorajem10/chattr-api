@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Broadcast;
 |--------------------------------------------------------------------------
 */
 
-
 /**
  * Notifications Channel
  * ------------------------------------------------------------
@@ -41,6 +40,20 @@ Broadcast::channel('notifications.{userId}', function ($user, $userId) {
  * - MessageRead
  */
 Broadcast::channel('messages.{userId}', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+
+/**
+ * Chatrooms Channel
+ * ------------------------------------------------------------
+ * Used to notify both participants when a new chatroom (private
+ * conversation) has been created. Only the users involved in
+ * that chatroom can listen to this channel.
+ *
+ * Used by:
+ * - ChatroomCreated
+ */
+Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
 });
 

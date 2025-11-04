@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/{receiverId}', [MessageController::class, 'getConversation']);
+    Route::get('/', [MessageController::class, 'getUserChatrooms']);
+    Route::get('/{chatroomId}', [MessageController::class, 'getConversation']);
     Route::post('/', [MessageController::class, 'sendMessage']);
-    Route::post('/mark-read/{senderId}', [MessageController::class, 'markConversationAsRead']);
+    Route::patch('/{chatroomId}/mark-read', [MessageController::class, 'markConversationAsRead']);
 });
