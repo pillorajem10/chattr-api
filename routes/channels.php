@@ -68,8 +68,8 @@ Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
  * - ReactionCreated
  * - ReactionRemoved
  */
-Broadcast::channel('reactions.{postId}', function ($user, $postId) {
-    return ! is_null($user);
+Broadcast::channel('reactions.{postId}', function ($postId) {
+    return new Channel('reactions.' . $postId);
 });
 
 /**

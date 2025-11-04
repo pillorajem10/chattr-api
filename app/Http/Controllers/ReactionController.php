@@ -50,6 +50,7 @@ class ReactionController extends Controller
 
         // Fire the real-time reaction event
         event(new ReactionCreated($reaction));
+        broadcast(new ReactionCreated($reaction));
 
         // Notify the post owner (but skip self-reactions)
         if ($post->user->id !== $user->id) {
@@ -113,7 +114,7 @@ class ReactionController extends Controller
             ->first();
 
         // Fire events before deletion so the frontend receives the data
-        event(new ReactionRemoved($reaction));
+        broadcast(new ReactionRemoved((object)['post_id' => $postId]));
 
         if ($notification) {
             event(new NotificationRemoved($notification));
