@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\Chatroom;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +38,7 @@ Broadcast::channel('notifications.{userId}', function ($user, $userId) {
  * - MessageRead
  */
 Broadcast::channel('chatroom.{chatroomId}', function ($user, $chatroomId) {
-    $chatroom = \App\Models\Chatroom::find($chatroomId);
+    $chatroom = Chatroom::find($chatroomId);
 
     if (!$chatroom) {
         return false;
