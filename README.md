@@ -22,8 +22,8 @@ A Laravel 10 REST API built with PHP 8.1.25, featuring posts, reactions, notific
 Ensure your system meets the following requirements:
 
 - PHP **8.1.25**  
-- Composer (PHP dependency manager)  
-- MySQL **5.7/8.0** or any database supported by Laravel  
+- Composer version **2.7.9**
+- MySQL ***5.7/8.0*** or any database supported by Laravel  
 
 <hr/>
 
