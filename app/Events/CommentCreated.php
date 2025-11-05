@@ -3,7 +3,7 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -12,21 +12,11 @@ use Illuminate\Queue\SerializesModels;
  * ==========================================================
  * Event: CommentCreated
  * ----------------------------------------------------------
- * This event is broadcasted whenever a new comment 
- * is successfully created on a post.
- *
- * Purpose:
- * - Send real-time updates to authorized users viewing
- *   a specific post so they can see new comments instantly.
- *
- * Broadcasting Channel:
- * - Private channel: "comments"
- *
- * Broadcast Name:
- * - comment.created
- *
- * Payload:
- * - The comment data passed from the backend.
+ * Broadcasts whenever a new comment is successfully created.
+ * 
+ * Channel: public "comments"
+ * Name: comment.created
+ * Payload: comment data + updated comment count
  * ==========================================================
  */
 class CommentCreated implements ShouldBroadcast
@@ -34,40 +24,58 @@ class CommentCreated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The comment data to broadcast.
-     *
-     * @var mixed
+     * The comment data.
      */
     public $comment;
 
     /**
+     * The updated total comment count for the post.
+     */
+    public $commentCount;
+
+    /**
      * Create a new event instance.
      *
-     * @param  mixed  $comment  The newly created comment data.
-     * @return void
+     * @param  mixed  $comment
+     * @param  int    $commentCount
      */
-    public function __construct($comment)
+    public function __construct($comment, $commentCount)
     {
         $this->comment = $comment;
+        $this->commentCount = $commentCount;
     }
 
     /**
-     * Define the private channel this event should broadcast on.
-     *
-     * Keeps comments secure so only authorized users
-     * (such as those viewing the post) receive them in real time.
-     *
-     * @return \Illuminate\Broadcasting\PrivateChannel
+     * Broadcast on the public "comments" channel.
      */
     public function broadcastOn()
     {
-        return new PrivateChannel('comments');
+        return new Channel('comments');
     }
 
     /**
-     * Define the event name used by frontend listeners.
-     *
-     * @return string
+     * Broadcast payload.
+     */
+    public function broadcastWith()
+    {
+        return [
+            'comment' => [
+                'id' => $this->comment->id,
+                'comment_post_id' => $this->comment->comment_post_id,
+                'comment_content' => $this->comment->comment_content,
+                'created_at' => $this->comment->created_at,
+                'user' => [
+                    'id' => $this->comment->user->id,
+                    'user_fname' => $this->comment->user->user_fname,
+                    'user_lname' => $this->comment->user->user_lname,
+                ],
+            ],
+            'commentCount' => $this->commentCount,
+        ];
+    }
+
+    /**
+     * Event name listened to on the frontend.
      */
     public function broadcastAs()
     {

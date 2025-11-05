@@ -61,8 +61,7 @@ Broadcast::channel('reactions', function () {
  *
  * Used by:
  * - CommentCreated
- * - CommentRemoved
  */
-Broadcast::channel('comments.{postId}', function ($user, $postId) {
-    return !is_null($user);
+Broadcast::channel('comments', function () {
+    return true;
 });

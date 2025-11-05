@@ -14,5 +14,4 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/{postId}', [CommentController::class, 'commentOnPost']);
     Route::get('/{postId}', [CommentController::class, 'getCommentsForPost']);
-    Route::delete('/{commentId}', [CommentController::class, 'removeCommentFromPost']);
 });
