@@ -7,7 +7,7 @@ use App\Models\Chatroom;
 |--------------------------------------------------------------------------
 | Broadcast Channels
 |--------------------------------------------------------------------------
-| This file defines all private broadcast channels used in the app.
+| Defines all private broadcast channels used in the app.
 | Each channel ensures that only the correct, authenticated user
 | can listen to events that belong to them.
 |--------------------------------------------------------------------------
@@ -17,8 +17,7 @@ use App\Models\Chatroom;
  * Notifications Channel
  * ------------------------------------------------------------
  * Used for sending and receiving real-time notifications
- * for a specific user. Only the user whose ID matches the
- * channel parameter can listen on this channel.
+ * for a specific user.
  *
  * Used by:
  * - NotificationCreated
@@ -28,38 +27,17 @@ Broadcast::channel('notifications.{userId}', function ($user, $userId) {
 });
 
 /**
- * Chatroom Channel
+ * Unified User Channel
  * ------------------------------------------------------------
- * Handles all messages and read events inside a specific chatroom.
- * Ensures only the two participants in that chatroom can subscribe.
+ * Each authenticated user subscribes once to this channel.
+ * All message and chatroom events are broadcasted here, so
  *
  * Used by:
  * - MessageSent
  * - MessageRead
- */
-Broadcast::channel('chatroom.{chatroomId}', function ($user, $chatroomId) {
-    $chatroom = Chatroom::find($chatroomId);
-
-    if (!$chatroom) {
-        return false;
-    }
-
-    // Authorize only if the user is one of the two participants
-    return (int) $user->id === (int) $chatroom->cr_user_one_id ||
-           (int) $user->id === (int) $chatroom->cr_user_two_id;
-});
-
-/**
- * Chatrooms Channel
- * ------------------------------------------------------------
- * Used to notify both participants when a new chatroom (private
- * conversation) has been created. Only the users involved in
- * that chatroom can listen to this channel.
- *
- * Used by:
  * - ChatroomCreated
  */
-Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
+Broadcast::channel('user.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
 });
 
@@ -67,28 +45,24 @@ Broadcast::channel('chatrooms.{userId}', function ($user, $userId) {
  * Reactions Channel
  * ------------------------------------------------------------
  * Sends live updates whenever someone reacts to a post.
- * Any authenticated user can listen to reactions for a
- * specific post.
  *
  * Used by:
  * - ReactionCreated
  * - ReactionRemoved
  */
 Broadcast::channel('reactions', function () {
-    return true; // allow all clients to listen
+    return true;
 });
 
 /**
  * Comments Channel
  * ------------------------------------------------------------
- * Broadcasts new or deleted comments for a specific post
- * in real time. Any logged-in user can listen to comment
- * updates for that post.
+ * Broadcasts new or deleted comments for a specific post.
  *
  * Used by:
  * - CommentCreated
  * - CommentRemoved
  */
 Broadcast::channel('comments.{postId}', function ($user, $postId) {
-    return ! is_null($user);
+    return !is_null($user);
 });

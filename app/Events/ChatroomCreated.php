@@ -10,48 +10,69 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Broadcasted when a new private chatroom is created.
+ * ==========================================================
+ * Event: ChatroomCreated
+ * ----------------------------------------------------------
+ * This event is broadcasted when a new private chatroom 
+ * is successfully created between two users.
  *
- * Notifies both participants (user one and user two)
- * that a new chatroom has been established.
+ * Purpose:
+ * - Notify both participants (User One and User Two)
+ *   that a new private chatroom has been established.
+ * - Allow the frontend to instantly display the new
+ *   chatroom information without requiring manual refresh.
+ * 
+ * Broadcasting Channels:
+ * - user.{cr_user_one_id}
+ * - user.{cr_user_two_id}
+ *
+ * Broadcast Name:
+ * - chatroom.created
+ * 
+ * Payload:
+ * - Chatroom details (IDs, user relationships, timestamps)
+ * ==========================================================
  */
 class ChatroomCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The chatroom that was created.
+     * The chatroom instance that was created.
+     *
+     * @var \App\Models\Chatroom
      */
     public $chatroom;
 
     /**
      * Create a new event instance.
      *
-     * @param \App\Models\Chatroom $chatroom
+     * @param  \App\Models\Chatroom  $chatroom
+     * @return void
      */
     public function __construct(Chatroom $chatroom)
     {
-        // Load relationships so frontend can access both users' names immediately
+        // Preload user relationships so frontend can access user names immediately
         $this->chatroom = $chatroom->load(['userOne', 'userTwo']);
     }
 
     /**
-     * Broadcast the event to both users' private channels.
+     * Determine the private channels this event should broadcast on.
      *
-     * Each participant (user_one and user_two) will receive the event.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @return array<int, \Illuminate\Broadcasting\PrivateChannel>
      */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chatrooms.' . $this->chatroom->cr_user_one_id),
-            new PrivateChannel('chatrooms.' . $this->chatroom->cr_user_two_id),
+            new PrivateChannel('user.' . $this->chatroom->cr_user_one_id),
+            new PrivateChannel('user.' . $this->chatroom->cr_user_two_id),
         ];
     }
 
     /**
-     * Broadcast event name.
+     * The event’s broadcast name.
+     *
+     * @return string
      */
     public function broadcastAs(): string
     {
@@ -59,9 +80,9 @@ class ChatroomCreated implements ShouldBroadcast
     }
 
     /**
-     * Data passed to the broadcast.
+     * Data that will be sent with the broadcast.
      *
-     * This ensures the frontend receives complete user data.
+     * @return array<string, mixed>
      */
     public function broadcastWith(): array
     {

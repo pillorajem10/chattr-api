@@ -12,8 +12,8 @@ use Illuminate\Queue\SerializesModels;
  * Broadcasted when messages from a specific sender
  * have been marked as read by the receiver.
  *
- * Notifies the original sender in real time that their
- * messages in the chatroom are now read.
+ * Notifies both the original sender and receiver
+ * in real time that messages in the chatroom are now read.
  */
 class MessageRead implements ShouldBroadcast
 {
@@ -39,11 +39,14 @@ class MessageRead implements ShouldBroadcast
     }
 
     /**
-     * Broadcast to the sender’s private message channel.
+     * Broadcast to both users' unified private channels.
      */
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
-        return new PrivateChannel('messages.' . $this->senderId);
+        return [
+            new PrivateChannel('user.' . $this->senderId),
+            new PrivateChannel('user.' . $this->receiverId),
+        ];
     }
 
     /**

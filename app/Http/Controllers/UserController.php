@@ -55,21 +55,4 @@ class UserController extends Controller
             $totalRecords
         );
     }
-
-    /**
-     * Get user by ID
-     */
-    public function getUserById(Request $request, $userId)
-    {
-        // Fetch user by ID
-        $user = User::find($userId);
-
-        // Check if user exists
-        if (! $user) {
-            return ResponseHelper::sendError('User not found', null, 404);
-        }
-
-        // Return response
-        return ResponseHelper::sendSuccess($user);
-    }
 }

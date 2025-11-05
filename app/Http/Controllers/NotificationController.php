@@ -7,14 +7,32 @@ use App\Helpers\TokenHelper;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 
+/**
+ * ==========================================================
+ * Controller: NotificationController
+ * ----------------------------------------------------------
+ * Manages user notifications, including:
+ * - Listing notifications with pagination and filters
+ * - Marking a single notification as read
+ * - Marking all notifications as read
+ *
+ * Utilizes:
+ * - TokenHelper for user extraction from bearer token
+ * - ResponseHelper for standardized JSON responses
+ * ==========================================================
+ */
 class NotificationController extends Controller
 {
     /**
-     * Get all notifications for the authenticated user (with pagination)
+     * Get all notifications for the authenticated user (with pagination).
      *
-     * Filters: all, unread
-     * @param Request $request
+     * Query parameters:
+     * - pageIndex (int, default: 1)
+     * - pageSize  (int, default: 10)
+     * - filter    (string: "all" | "unread", default: "all")
      *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getAllNotifications(Request $request)
     {
@@ -48,9 +66,11 @@ class NotificationController extends Controller
     }
 
     /**
-     * Mark a single notification as read
+     * Mark a single notification as read.
      *
-     * Real-time update via WebSocket
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int                       $notificationId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function markAsRead(Request $request, $notificationId)
     {
@@ -75,9 +95,10 @@ class NotificationController extends Controller
     }
 
     /**
-     * Mark all notifications as read for the authenticated user
+     * Mark all notifications as read for the authenticated user.
      *
-     * Real-time updates via WebSocket
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function markAllAsRead(Request $request)
     {

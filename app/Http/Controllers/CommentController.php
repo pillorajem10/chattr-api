@@ -14,15 +14,34 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * ==========================================================
+ * Controller: CommentController
+ * ----------------------------------------------------------
+ * Handles all comment-related actions for posts, including:
+ * - Adding comments
+ * - Retrieving comments
+ * - Removing comments
+ *
+ * Integrations:
+ * - TokenHelper: For decoding authenticated user tokens.
+ * - ResponseHelper: For consistent JSON responses.
+ * - Laravel Events: For real-time broadcasting (CommentCreated,
+ *   CommentRemoved, NotificationCreated).
+ * ==========================================================
+ */
 class CommentController extends Controller
 {
     /**
      * Add a comment to a post.
      *
-     * Validates input data and creates a new comment in the database.
-     * Notifies the post owner about the new comment.
-     * Real-time broadcasting of the new comment event.
+     * Validates input, ensures the post exists,
+     * creates a new comment, notifies the post owner,
+     * and broadcasts real-time updates.
      *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $postId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function commentOnPost(Request $request, $postId)
     {
@@ -35,31 +54,32 @@ class CommentController extends Controller
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
-        // Validate incoming request data
-        $validator = Validator::make($request->all(), [
-            'comment_content' => 'required|string|max:500',
-        ], CommentValidationMessages::create());
+        // Validate request data
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'comment_content' => 'required|string|max:500',
+            ],
+            CommentValidationMessages::create()
+        );
 
-        // Return validation errors if any
+        // Return the first validation error if validation fails
         if ($validator->fails()) {
-            // get the first array for the message
             $firstError = collect($validator->errors()->all())->first();
-
-            // Return the first validation error
             return ResponseHelper::sendError($firstError, null, 422);
-        };
+        }
 
-        // Create new comment
+        // Create a new comment
         $comment = Comment::create([
             'comment_post_id' => $postId,
             'comment_user_id' => $user->id,
             'comment_content' => $request->comment_content,
         ]);
 
-        // Fire the real-time comment created event
+        // Broadcast real-time "comment created" event
         event(new CommentCreated($comment));
 
-        // Notify the post owner (but skip self-comments)
+        // Notify the post owner (skip if the commenter is the owner)
         if ($post->user->id !== $user->id) {
             $notification = Notification::create([
                 'notification_user_id' => $post->user->id,
@@ -68,33 +88,43 @@ class CommentController extends Controller
                 'notification_message' => "{$user->user_fname} {$user->user_lname} commented on your post.",
             ]);
 
-            // Fire the real-time notification created event
+            // Broadcast real-time "notification created" event
             event(new NotificationCreated($notification));
         }
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess($comment, 'Comment added successfully.', 201);
     }
 
     /**
-     * Get comments for a post.
+     * Retrieve all comments for a specific post.
      *
+     * Fetches comments with their associated user data.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $postId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getCommentsForPost(Request $request, $postId)
     {
-        // Fetch comments for the post
+        // Fetch comments with associated users
         $comments = Comment::where('comment_post_id', $postId)
             ->with('user')
             ->get();
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess($comments, 'Comments retrieved successfully.', 200);
     }
 
     /**
      * Remove a comment from a post.
      *
-     * Real-time broadcasting of the comment removed event.
+     * Validates ownership, deletes the comment,
+     * and broadcasts a real-time removal event.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $commentId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function removeCommentFromPost(Request $request, $commentId)
     {
@@ -107,7 +137,7 @@ class CommentController extends Controller
             return ResponseHelper::sendError('Comment not found.', null, 404);
         }
 
-        // Check if the authenticated user is the owner of the comment
+        // Ensure the authenticated user owns the comment
         if ($comment->comment_user_id !== $user->id) {
             return ResponseHelper::sendError('You are not authorized to delete this comment.', null, 403);
         }
@@ -115,10 +145,10 @@ class CommentController extends Controller
         // Delete the comment
         $comment->delete();
 
-        // Fire the real-time comment removed event
+        // Broadcast real-time "comment removed" event
         event(new CommentRemoved($commentId));
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess(null, 'Comment removed successfully.', 200);
     }
 }

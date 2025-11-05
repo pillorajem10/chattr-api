@@ -10,45 +10,59 @@ use App\Models\Share;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * ==========================================================
+ * Controller: PostController
+ * ----------------------------------------------------------
+ * Manages all post-related operations, including:
+ * - Retrieving posts with pagination
+ * - Creating posts
+ * - Fetching post details by ID
+ * - Deleting posts (including shared posts)
+ *
+ * Integrations:
+ * - TokenHelper: Authenticates user via bearer token.
+ * - ResponseHelper: Formats API responses consistently.
+ * - Validation classes: Provides structured validation messages.
+ * ==========================================================
+ */
 class PostController extends Controller
 {
     /**
-     * Get all users except the authenticated user
+     * Retrieve all posts with pagination and related data.
      *
-     * with pagination response helper
+     * Includes:
+     * - User details
+     * - Original post if shared
+     * - Reaction, comment, and share counts
+     * - Whether the authenticated user has liked the post
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getAllPosts(Request $request)
     {
         // Decode token to identify the current user
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Build the base query for posts, including related data
+        // Base query with relationships and counts
         $postsQuery = Post::with([
-            'user',
-            'share.originalPost.user',
-        ])
-        ->withCount([
-            // Count only "like" reactions
-            'reactions as likesCount' => function ($query) {
-                $query->where('reaction_type', 'like');
-            },
-            // Count all comments related to this post
-            'comments as commentCount' => function ($query) {
-                $query->whereNotNull('comment_post_id');
-            },
-            // Count how many times this post was shared
-            'shares as shareCount' => function ($query) {
-                $query->whereNotNull('share_original_post_id');
-            },
-        ])
-        ->orderBy('created_at', 'desc');
+                'user',
+                'share.originalPost.user',
+            ])
+            ->withCount([
+                'reactions as likesCount' => fn($query) => $query->where('reaction_type', 'like'),
+                'comments as commentCount' => fn($query) => $query->whereNotNull('comment_post_id'),
+                'shares as shareCount' => fn($query) => $query->whereNotNull('share_original_post_id'),
+            ])
+            ->orderBy('created_at', 'desc');
 
-        // Pagination parameters
+        // Pagination setup
         $pageIndex = (int) $request->query('pageIndex', 1);
         $pageSize  = (int) $request->query('pageSize', 10);
 
         $totalRecords = $postsQuery->count();
-        $totalPages = ceil($totalRecords / $pageSize);
+        $totalPages   = ceil($totalRecords / $pageSize);
 
         // Fetch paginated posts
         $posts = $postsQuery
@@ -64,14 +78,14 @@ class PostController extends Controller
                     }
                 }
 
-                // Determine if the current user liked this post
+                // Determine if current user liked this post
                 $userReaction = $post->reactions()
                     ->where('reaction_user_id', $user->id)
                     ->where('reaction_type', 'like')
                     ->first();
 
                 $post->likedByUser = (bool) $userReaction;
-                $post->user_reaction_id = $userReaction ? $userReaction->id : null;
+                $post->user_reaction_id = $userReaction?->id ?? null;
 
                 return $post;
             });
@@ -89,26 +103,29 @@ class PostController extends Controller
     /**
      * Create a new post.
      *
-     * Validates input data and creates a new post in the database.
+     * Validates input data, saves it to the database,
+     * and returns the newly created post.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function createPost(Request $request)
     {
         // Decode the token from the Authorization header
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Validate incoming request data
-        $validator = Validator::make($request->all(), [
-            'post_content' => 'required|string|max:1000',
-        ], PostValidationMessages::create());
+        // Validate input
+        $validator = Validator::make(
+            $request->all(),
+            ['post_content' => 'required|string|max:1000'],
+            PostValidationMessages::create()
+        );
 
-        // Return validation errors if any
+        // Return validation error if any
         if ($validator->fails()) {
-            // get the first array for the message
             $firstError = collect($validator->errors()->all())->first();
-
-            // Return the first validation error
             return ResponseHelper::sendError($firstError, null, 422);
-        };
+        }
 
         // Create new post
         $post = Post::create([
@@ -116,76 +133,82 @@ class PostController extends Controller
             'post_user_id' => $user->id,
         ]);
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess($post, 'Post created successfully.', 201);
     }
 
     /**
-     * Get Post By ID params
+     * Retrieve a post by its ID, including user details.
      *
-     * Fetch its user details as well
+     * @param  int  $postId
+     * @return \Illuminate\Http\JsonResponse
      */
     public static function getPostById($postId)
     {
-        // Validate postId
+        // Validate post ID
         if (! $postId) {
             return ResponseHelper::sendError('Post ID is required.', null, 400);
         }
 
-        // Fetch post with user details
+        // Fetch post with user relationship
         $post = Post::with('user')->find($postId);
 
-        // Check if post exists
+        // Return error if not found
         if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess($post, 'Post retrieved successfully.', 200);
     }
 
     /**
-     * Delete Post By ID
+     * Delete a post by its ID.
      *
-     * If its a shared post the share record will be deleted as well
+     * If the post is shared, also deletes the associated share record.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $postId
+     * @return \Illuminate\Http\JsonResponse
      */
     public static function deletePostById(Request $request, $postId)
     {
-        // Validate postId
+        // Validate post ID
         if (! $postId) {
             return ResponseHelper::sendError('Post ID is required.', null, 400);
         }
 
-        // Decode the token from the Authorization header
+        // Decode token for authentication
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        // Fetch post
+        // Fetch post record
         $post = Post::find($postId);
 
-        // Check if post exists
+        // Validate post existence
         if (! $post) {
             return ResponseHelper::sendError('Post not found.', null, 404);
         }
 
-        // Check if the authenticated user is the owner of the post
+        // Ensure the authenticated user owns the post
         if ($post->post_user_id !== $user->id) {
             return ResponseHelper::sendError('Unauthorized to delete this post.', null, 403);
         }
 
-        // if its a shared post, delete the related share record
+        // If shared post, delete associated share record
         if ($post->post_is_shared) {
             $share = Share::where('share_post_id', $postId)
                 ->where('share_user_id', $user->id)
                 ->first();
+
             if ($share) {
                 $share->delete();
             }
         }
 
-        // Delete the post
+        // Delete post
         $post->delete();
 
-        // Return response
+        // Return success response
         return ResponseHelper::sendSuccess(null, 'Post deleted successfully.', 200);
     }
 }

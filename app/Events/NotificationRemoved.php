@@ -8,19 +8,45 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * ==========================================================
+ * Event: NotificationRemoved
+ * ----------------------------------------------------------
+ * This event is broadcasted whenever an existing notification
+ * is cleared or removed for a specific user.
+ *
+ * Purpose:
+ * - Notify the intended user in real time that a notification
+ *   has been deleted or marked as removed.
+ * - Maintain synchronization between server and client
+ *   notification states.
+ *
+ * Broadcasting Channel:
+ * - Private channel: "notifications.{notification_user_id}"
+ *
+ * Broadcast Name:
+ * - notification.removed
+ *
+ * Payload:
+ * - The removed notification data.
+ * ==========================================================
+ */
 class NotificationRemoved implements ShouldBroadcast
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * The notification data to broadcast.
+     *
+     * @var mixed
      */
     public $notification;
 
     /**
-     * Pass the removed notification instance to the event.
+     * Create a new event instance.
+     *
+     * @param  mixed  $notification  The removed notification instance.
+     * @return void
      */
     public function __construct($notification)
     {
@@ -28,10 +54,12 @@ class NotificationRemoved implements ShouldBroadcast
     }
 
     /**
-     * Broadcast over a private channel.
+     * Define the private channel this event should broadcast on.
      *
-     * This ensures only authorized clients (like the intended user)
-     * receive real-time updates when a notification is cleared or removed.
+     * Ensures that only authorized clients (e.g., the intended user)
+     * receive updates when a notification is removed.
+     *
+     * @return \Illuminate\Broadcasting\PrivateChannel
      */
     public function broadcastOn()
     {
@@ -39,10 +67,12 @@ class NotificationRemoved implements ShouldBroadcast
     }
 
     /**
-     * The event name used on the frontend listener.
+     * Define the event name used by frontend listeners.
      *
-     * Example listener:
+     * Example usage on the client:
      * `.listen('.notification.removed', callback)`
+     *
+     * @return string
      */
     public function broadcastAs()
     {

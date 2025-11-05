@@ -13,31 +13,58 @@ use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * ==========================================================
+ * Controller: MessageController
+ * ----------------------------------------------------------
+ * Handles all message-related operations including:
+ * - Retrieving chatrooms
+ * - Fetching conversation messages
+ * - Creating chatrooms
+ * - Sending messages
+ * - Marking messages as read
+ *
+ * Integrations:
+ * - TokenHelper: Verifies authenticated user from bearer token.
+ * - ResponseHelper: Provides standardized API responses.
+ * - Broadcasting Events: Enables real-time communication.
+ * ==========================================================
+ */
 class MessageController extends Controller
 {
     /**
      * Get all chatrooms the authenticated user participates in.
      *
-     * Returns each chatroom with the latest message preview.
+     * Each chatroom includes:
+     * - The latest message preview
+     * - Unread message count
+     *
+     * Supports optional filtering via query:
+     * - ?filter=unread — Returns only chatrooms with unread messages.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getUserChatrooms(Request $request)
     {
         $user = TokenHelper::decodeToken($request->header('Authorization'));
         $filter = $request->query('filter', 'all');
 
+        // Retrieve all chatrooms where the user is a participant
         $chatrooms = Chatroom::where(function ($q) use ($user) {
-            $q->where('cr_user_one_id', $user->id)
-              ->orWhere('cr_user_two_id', $user->id);
-        })
-        ->with([
-            'userOne:id,user_fname,user_lname',
-            'userTwo:id,user_fname,user_lname',
-            'messages' => function ($q) {
-                $q->latest()->limit(1);
-            },
-        ])
-        ->get();
+                $q->where('cr_user_one_id', $user->id)
+                  ->orWhere('cr_user_two_id', $user->id);
+            })
+            ->with([
+                'userOne:id,user_fname,user_lname',
+                'userTwo:id,user_fname,user_lname',
+                'messages' => function ($q) {
+                    $q->latest()->limit(1);
+                },
+            ])
+            ->get();
 
+        // Append unread message count to each chatroom
         foreach ($chatrooms as $chatroom) {
             $chatroom->unread_count = Message::where('message_chatroom_id', $chatroom->id)
                 ->where('message_receiver_id', $user->id)
@@ -45,10 +72,12 @@ class MessageController extends Controller
                 ->count();
         }
 
+        // Apply unread filter if requested
         if ($filter === 'unread') {
             $chatrooms = $chatrooms->filter(fn($chatroom) => $chatroom->unread_count > 0)->values();
         }
 
+        // Sort chatrooms by latest message timestamp
         $chatrooms = $chatrooms->sortByDesc(
             fn($chatroom) => optional($chatroom->messages->first())->created_at
         )->values();
@@ -57,7 +86,15 @@ class MessageController extends Controller
     }
 
     /**
-     * Get conversation messages within a specific chatroom.
+     * Retrieve conversation messages within a specific chatroom.
+     *
+     * Supports:
+     * - Pagination via pageIndex & pageSize
+     * - Optional filtering (?filter=unread)
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $chatroomId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getConversation(Request $request, $chatroomId)
     {
@@ -69,6 +106,7 @@ class MessageController extends Controller
 
         $chatroom = Chatroom::find($chatroomId);
 
+        // Ensure chatroom exists and user is a participant
         if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
             return ResponseHelper::sendError('You are not authorized to view this chatroom.', null, 403);
         }
@@ -99,37 +137,50 @@ class MessageController extends Controller
     }
 
     /**
-     * Create a new private chatroom between two users (no message is sent).
+     * Create a new private chatroom between two users.
+     *
+     * Prevents duplicate chatrooms and self-chat creation.
+     * Fires real-time ChatroomCreated event upon success.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function createChatroom(Request $request)
     {
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        $validator = Validator::make($request->all(), [
-            'receiver_id' => 'required|integer|exists:tbl_users,id',
-        ], [
-            'receiver_id.required' => 'Receiver ID is required.',
-            'receiver_id.exists'   => 'The specified user does not exist.',
-        ]);
+        // Validate receiver ID
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'receiver_id' => 'required|integer|exists:tbl_users,id',
+            ],
+            [
+                'receiver_id.required' => 'Receiver ID is required.',
+                'receiver_id.exists'   => 'The specified user does not exist.',
+            ]
+        );
 
         if ($validator->fails()) {
             $firstError = collect($validator->errors()->all())->first();
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
+        // Prevent self-chat creation
         if ((int) $request->receiver_id === (int) $user->id) {
             return ResponseHelper::sendError('You cannot create a chatroom with yourself.', null, 422);
         }
 
+        // Check if chatroom already exists
         $existing = Chatroom::where(function ($q) use ($user, $request) {
-            $q->where('cr_user_one_id', $user->id)
-              ->where('cr_user_two_id', $request->receiver_id);
-        })
-        ->orWhere(function ($q) use ($user, $request) {
-            $q->where('cr_user_one_id', $request->receiver_id)
-              ->where('cr_user_two_id', $user->id);
-        })
-        ->first();
+                $q->where('cr_user_one_id', $user->id)
+                  ->where('cr_user_two_id', $request->receiver_id);
+            })
+            ->orWhere(function ($q) use ($user, $request) {
+                $q->where('cr_user_one_id', $request->receiver_id)
+                  ->where('cr_user_two_id', $user->id);
+            })
+            ->first();
 
         if ($existing) {
             return ResponseHelper::sendSuccess([
@@ -138,11 +189,13 @@ class MessageController extends Controller
             ], 'Chatroom already exists.');
         }
 
+        // Create new chatroom
         $chatroom = Chatroom::create([
             'cr_user_one_id' => $user->id,
             'cr_user_two_id' => $request->receiver_id,
         ]);
 
+        // Broadcast new chatroom creation
         broadcast(new ChatroomCreated($chatroom))->toOthers();
 
         return ResponseHelper::sendSuccess([
@@ -153,28 +206,40 @@ class MessageController extends Controller
 
     /**
      * Send a new private message inside an existing chatroom.
+     *
+     * Validates input, ensures authorization, creates the message,
+     * and broadcasts it in real time.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function sendMessage(Request $request)
     {
         $user = TokenHelper::decodeToken($request->header('Authorization'));
 
-        $validator = Validator::make($request->all(), [
-            'message_receiver_id' => 'required|integer|exists:tbl_users,id',
-            'message_chatroom_id' => 'required|integer|exists:tbl_chatrooms,id',
-            'message_content'     => 'required|string|max:2000',
-        ], MessageValidationMessages::send());
+        // Validate message payload
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'message_receiver_id' => 'required|integer|exists:tbl_users,id',
+                'message_chatroom_id' => 'required|integer|exists:tbl_chatrooms,id',
+                'message_content'     => 'required|string|max:2000',
+            ],
+            MessageValidationMessages::send()
+        );
 
         if ($validator->fails()) {
             $firstError = collect($validator->errors()->all())->first();
             return ResponseHelper::sendError($firstError, null, 422);
         }
 
+        // Ensure chatroom exists and user is a participant
         $chatroom = Chatroom::find($request->message_chatroom_id);
-
         if (! $chatroom || ! $chatroom->hasParticipant($user->id)) {
             return ResponseHelper::sendError('You are not authorized to send messages in this chatroom.', null, 403);
         }
 
+        // Create the new message
         $message = Message::create([
             'message_sender_id'   => $user->id,
             'message_receiver_id' => $request->message_receiver_id,
@@ -182,7 +247,7 @@ class MessageController extends Controller
             'message_content'     => $request->message_content,
         ]);
 
-        // Broadcast through chatroom.{id} so both participants receive the update
+        // Broadcast message to both participants
         broadcast(new MessageSent($message))->toOthers();
 
         return ResponseHelper::sendSuccess([
@@ -193,6 +258,12 @@ class MessageController extends Controller
 
     /**
      * Mark all messages in a chatroom as read for the authenticated user.
+     *
+     * Updates message read status and triggers real-time broadcast.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $chatroomId
+     * @return \Illuminate\Http\JsonResponse
      */
     public function markConversationAsRead(Request $request, $chatroomId)
     {
@@ -203,6 +274,7 @@ class MessageController extends Controller
             return ResponseHelper::sendError('You are not authorized to access this chatroom.', null, 403);
         }
 
+        // Mark unread messages as read
         Message::where('message_chatroom_id', $chatroomId)
             ->where('message_receiver_id', $user->id)
             ->where('message_read', false)
@@ -212,7 +284,7 @@ class MessageController extends Controller
             ? $chatroom->cr_user_two_id
             : $chatroom->cr_user_one_id;
 
-        // Broadcast through chatroom.{id} so both participants receive read status
+        // Broadcast message read event to both participants
         broadcast(new MessageRead($chatroom->id, $senderId, $user->id))->toOthers();
 
         return ResponseHelper::sendSuccess(null, 'Messages marked as read.', 200);
